@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ campaign.name }} - Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dashboard-body">
+    <div class="container dashboard-container">
+        <header class="header">
+            <div class="header-nav">
+                <a href="{{ url_for('upload.run_results', run_id=run.id) }}" class="btn btn-sm">← Resultados</a>
+                <a href="{{ url_for('main.index') }}" class="btn btn-sm">Campanas</a>
+            </div>
+            <h1>{{ campaign.name|upper }}</h1>
+            <p class="subtitle">Dashboard de Performance | <span class="brand">{{ campaign.brand_display or campaign.brand }}</span> | {{ run.created_at.strftime('%Y-%m-%d') }}</p>
+        </header>
+        <div class="filters">
+            <div class="filter-group">
+                <label>Plataforma</label>
+                <select id="filterPlataforma"><option value="">Todas</option></select>
+            </div>
+            <div class="filter-group">
+                <label>Etapa</label>
+                <select id="filterEtapa"><option value="">Todas</option></select>
+            </div>
+            <div class="filter-group">
+                <label>Tipo Compra</label>
+                <select id="filterCompra"><option value="">Todas</option></select>
+            </div>
+            <div class="filter-group">
+                <label>Formato</label>
+                <select id="filterFormato"><option value="">Todos</option></select>
+            </div>
+            <div class="filter-group">
+                <label>Audiencia</label>
+                <select id="filterAudiencia"><option value="">Todas</option></select>
+            </div>
+        </div>
+        <div class="export-bar">
+            <button onclick="exportPDF()" class="btn-export">Exportar PDF</button>
+        </div>
+        <div class="kpis">
+            <div class="kpi-card"><div class="kpi-label">Gasto Total</div><div class="kpi-value" id="kpiGasto">$0</div></div>
+            <div class="kpi-card"><div class="kpi-label">Impresiones</div><div class="kpi-value" id="kpiImpresiones">0</div></div>
+            <div class="kpi-card"><div class="kpi-label">Clics</div><div class="kpi-value" id="kpiClics">0</div></div>
+            <div class="kpi-card"><div class="kpi-label">Views</div><div class="kpi-value" id="kpiViews">0</div></div>
+            <div class="kpi-card"><div class="kpi-label">Alcance</div><div class="kpi-value" id="kpiAlcance">0</div></div>
+            <div class="kpi-card"><div class="kpi-label">Frecuencia</div><div class="kpi-value" id="kpiFrecuencia">0</div></div>
+            <div class="kpi-card"><div class="kpi-label">CTR</div><div class="kpi-value" id="kpiCTR">0%</div></div>
+            <div class="kpi-card"><div class="kpi-label">VTR</div><div class="kpi-value" id="kpiVTR">0%</div></div>
+        </div>
+
+        <div class="macro-title">Performance General - Metricas Base</div>
+
+        <div class="section-title">Inversion</div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Gasto por Plataforma</h3><div class="chart-container"><canvas id="chartGastoPlataforma"></canvas></div></div>
+            <div class="chart-card"><h3>Gasto por Audiencia</h3><div class="chart-container"><canvas id="chartGastoAudiencia"></canvas></div></div>
+            <div class="chart-card"><h3>Gasto por Tipo de Compra</h3><div class="chart-container"><canvas id="chartGastoCompra"></canvas></div></div>
+        </div>
+        <div class="chart-full"><h3>Evolucion Diaria: Inversion</h3><div class="chart-container"><canvas id="chartEvoGasto"></canvas></div></div>
+        <div class="chart-full"><h3>Evolucion Diaria: Inversion por Plataforma</h3><div class="chart-container"><canvas id="chartEvoGastoPlat"></canvas></div></div>
+        <div class="chart-full"><h3>Evolucion Diaria: Inversion por Formato</h3><div class="chart-container"><canvas id="chartEvoGastoFmt"></canvas></div></div>
+
+        <div class="section-title">Impresiones</div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Impresiones por Plataforma</h3><div class="chart-container"><canvas id="chartImpPlataforma"></canvas></div></div>
+            <div class="chart-card"><h3>Impresiones por Formato</h3><div class="chart-container tall"><canvas id="chartImpFormato"></canvas></div></div>
+            <div class="chart-card"><h3>Impresiones por Audiencia</h3><div class="chart-container"><canvas id="chartImpAudiencia"></canvas></div></div>
+        </div>
+        <div class="chart-full"><h3>Evolucion Diaria: Impresiones y Frecuencia</h3><div class="chart-container"><canvas id="chartEvoImpresiones"></canvas></div></div>
+        <div class="chart-full"><h3>Evolucion Diaria: Impresiones por Plataforma</h3><div class="chart-container"><canvas id="chartEvoImpPlat"></canvas></div></div>
+        <div class="chart-full"><h3>Evolucion Diaria: Impresiones por Formato</h3><div class="chart-container"><canvas id="chartEvoImpFmt"></canvas></div></div>
+
+        <div class="section-title">Clics</div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Clics por Plataforma</h3><div class="chart-container"><canvas id="chartClicsPlataforma"></canvas></div></div>
+            <div class="chart-card"><h3>Clics por Formato</h3><div class="chart-container tall"><canvas id="chartClicsFormato"></canvas></div></div>
+            <div class="chart-card"><h3>Clics por Audiencia</h3><div class="chart-container"><canvas id="chartClicsAudiencia"></canvas></div></div>
+        </div>
+        <div class="chart-full"><h3>Evolucion Diaria: Clics y CTR</h3><div class="chart-container"><canvas id="chartEvoClics"></canvas></div></div>
+        <div class="chart-full"><h3>Evolucion Diaria: Clics por Plataforma</h3><div class="chart-container"><canvas id="chartEvoClicsPlat"></canvas></div></div>
+        <div class="chart-full"><h3>Evolucion Diaria: Clics por Formato</h3><div class="chart-container"><canvas id="chartEvoClicsFmt"></canvas></div></div>
+
+        <div class="section-title">Video Views</div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Views por Plataforma</h3><div class="chart-container"><canvas id="chartViewsPlataforma"></canvas></div></div>
+            <div class="chart-card"><h3>Views por Formato</h3><div class="chart-container tall"><canvas id="chartViewsFormato"></canvas></div></div>
+            <div class="chart-card"><h3>Views por Audiencia</h3><div class="chart-container"><canvas id="chartViewsAudiencia"></canvas></div></div>
+        </div>
+        <div class="chart-full"><h3>Evolucion Diaria: Video Views y VTR</h3><div class="chart-container"><canvas id="chartEvoViews"></canvas></div></div>
+        <div class="chart-full"><h3>Evolucion Diaria: Video Views por Plataforma</h3><div class="chart-container"><canvas id="chartEvoViewsPlat"></canvas></div></div>
+        <div class="chart-full"><h3>Evolucion Diaria: Video Views por Formato</h3><div class="chart-container"><canvas id="chartEvoViewsFmt"></canvas></div></div>
+
+        <div class="section-title">Alcance y Frecuencia</div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Alcance por Plataforma</h3><div class="chart-container"><canvas id="chartAlcancePlataforma"></canvas></div></div>
+            <div class="chart-card"><h3>Alcance por Audiencia</h3><div class="chart-container"><canvas id="chartAlcanceAudiencia"></canvas></div></div>
+            <div class="chart-card"><h3>Frecuencia Promedio por Plataforma</h3><div class="chart-container"><canvas id="chartFrecuenciaPlataforma"></canvas></div></div>
+        </div>
+
+        <div class="macro-title">Ratios de Eficiencia</div>
+
+        <div class="section-title">Eficiencia por Plataforma</div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Impresiones por Plataforma</h3><div class="chart-container"><canvas id="chartEfPlatImp"></canvas></div></div>
+            <div class="chart-card"><h3>CTR por Plataforma</h3><div class="chart-container"><canvas id="chartEfPlatCTR"></canvas></div></div>
+            <div class="chart-card"><h3>VTR por Plataforma</h3><div class="chart-container"><canvas id="chartEfPlatVTR"></canvas></div></div>
+        </div>
+        <div class="section-title">Eficiencia por Etapa</div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Impresiones por Etapa</h3><div class="chart-container"><canvas id="chartEfEtapaImp"></canvas></div></div>
+            <div class="chart-card"><h3>CTR por Etapa</h3><div class="chart-container"><canvas id="chartEfEtapaCTR"></canvas></div></div>
+            <div class="chart-card"><h3>VTR por Etapa</h3><div class="chart-container"><canvas id="chartEfEtapaVTR"></canvas></div></div>
+        </div>
+        <div class="section-title">Eficiencia por Tipo de Compra</div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Impresiones por Compra</h3><div class="chart-container"><canvas id="chartEfCompraImp"></canvas></div></div>
+            <div class="chart-card"><h3>CTR por Compra</h3><div class="chart-container"><canvas id="chartEfCompraCTR"></canvas></div></div>
+            <div class="chart-card"><h3>VTR por Compra</h3><div class="chart-container"><canvas id="chartEfCompraVTR"></canvas></div></div>
+        </div>
+        <div class="section-title">Eficiencia por Formato</div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Impresiones por Formato</h3><div class="chart-container"><canvas id="chartEfFmtImp"></canvas></div></div>
+            <div class="chart-card"><h3>CTR por Formato</h3><div class="chart-container"><canvas id="chartEfFmtCTR"></canvas></div></div>
+            <div class="chart-card"><h3>VTR por Formato</h3><div class="chart-container"><canvas id="chartEfFmtVTR"></canvas></div></div>
+        </div>
+        <div class="section-title">Eficiencia por Audiencia</div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Impresiones por Audiencia</h3><div class="chart-container"><canvas id="chartEfAudImp"></canvas></div></div>
+            <div class="chart-card"><h3>CTR por Audiencia</h3><div class="chart-container"><canvas id="chartEfAudCTR"></canvas></div></div>
+            <div class="chart-card"><h3>VTR por Audiencia</h3><div class="chart-container"><canvas id="chartEfAudVTR"></canvas></div></div>
+        </div>
+        <div class="section-title">Eficiencia por Comunicacion</div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>Impresiones por Comunicacion</h3><div class="chart-container"><canvas id="chartEfComImp"></canvas></div></div>
+            <div class="chart-card"><h3>CTR por Comunicacion</h3><div class="chart-container"><canvas id="chartEfComCTR"></canvas></div></div>
+            <div class="chart-card"><h3>VTR por Comunicacion</h3><div class="chart-container"><canvas id="chartEfComVTR"></canvas></div></div>
+        </div>
+
+        <div class="table-section">
+            <h3>Detalle de Datos</h3>
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>Plataforma</th><th>Etapa</th><th>Compra</th><th>Formato</th><th>Audiencia</th>
+                        <th>Gasto</th><th>Impresiones</th><th>Clics</th><th>Views</th><th>CTR</th><th>VTR</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <footer class="footer">Dashboard generado automaticamente | {{ run.created_at.strftime('%Y-%m-%d') }}</footer>
+    </div>
+
+    <div id="loadingOverlay" class="spinner-overlay">
+        <div class="spinner"></div>
+        <p>Cargando datos...</p>
+    </div>
+
+    <script>
+        const DATA_URL = "{{ url_for('api.run_data', run_id=run.id) }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

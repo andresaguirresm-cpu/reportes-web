@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Smart Reports{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('main.index') }}" class="nav-brand">
+                <span class="nav-logo">SR</span>
+                <span class="nav-title">Smart Reports</span>
+            </a>
+            <div class="nav-links">
+                <a href="{{ url_for('main.index') }}">Campanas</a>
+                <a href="{{ url_for('upload.upload_page') }}" class="btn-nav">Subir Archivos</a>
+            </div>
+        </div>
+    </nav>
+    <main class="main-content">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    <footer class="footer">
+        <div class="container">Smart Reports | Dashboard de Performance</div>
+    </footer>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

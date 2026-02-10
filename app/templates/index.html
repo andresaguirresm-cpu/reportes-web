@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Smart Reports - Campanas{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Campanas</h1>
+    <a href="{{ url_for('upload.upload_page') }}" class="btn btn-primary">Subir Archivos</a>
+</div>
+
+{% if campaigns %}
+<div class="campaigns-grid">
+    {% for item in campaigns %}
+    <div class="campaign-card">
+        <div class="campaign-header">
+            <h2>{{ item.campaign.name }}</h2>
+            {% if item.campaign.brand_display %}
+            <span class="brand-badge">{{ item.campaign.brand_display }}</span>
+            {% endif %}
+        </div>
+        <div class="campaign-meta">
+            {% if item.last_run %}
+            <div class="meta-row">
+                <span class="meta-label">Ultima ejecucion:</span>
+                <span class="meta-value">{{ item.last_run.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Filas:</span>
+                <span class="meta-value">{{ "{:,}".format(item.last_run.total_rows) }}</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Plataformas:</span>
+                <span class="meta-value">{{ item.last_run.platforms }}</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Estado:</span>
+                <span class="status-badge status-{{ item.last_run.status }}">{{ item.last_run.status }}</span>
+            </div>
+            {% else %}
+            <div class="meta-row">
+                <span class="meta-label">Sin ejecuciones</span>
+            </div>
+            {% endif %}
+        </div>
+        <div class="campaign-actions">
+            {% if item.last_run %}
+            <a href="{{ url_for('upload.run_results', run_id=item.last_run.id) }}" class="btn btn-sm">Ver Resultados</a>
+            {% if item.last_run.status == 'completed' %}
+            <a href="{{ url_for('dashboard.dashboard', run_id=item.last_run.id) }}" class="btn btn-sm btn-accent">Dashboard</a>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📊</div>
+    <h2>No hay campanas todavia</h2>
+    <p>Sube archivos CSV o Excel para crear tu primera campana</p>
+    <a href="{{ url_for('upload.upload_page') }}" class="btn btn-primary">Subir Archivos</a>
+</div>
+{% endif %}
+{% endblock %}

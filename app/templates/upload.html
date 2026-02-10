@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Subir Archivos - Smart Reports{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Subir Archivos</h1>
+</div>
+
+<div class="upload-section">
+    <form id="uploadForm" action="{{ url_for('upload.upload_files') }}" method="post" enctype="multipart/form-data">
+        <div id="dropZone" class="drop-zone">
+            <div class="drop-icon">📁</div>
+            <h3>Arrastra archivos aqui</h3>
+            <p>o haz clic para seleccionar</p>
+            <p class="drop-hint">CSV, Excel (.xlsx, .xls)</p>
+            <input type="file" id="fileInput" name="files" multiple accept=".csv,.xlsx,.xls" class="file-input-hidden">
+        </div>
+
+        <div id="fileList" class="file-list" style="display:none">
+            <h3>Archivos seleccionados</h3>
+            <div id="fileItems"></div>
+        </div>
+
+        <div class="upload-options">
+            <div class="form-group">
+                <label for="campaignName">Nombre de campana (opcional - se auto-detecta)</label>
+                <input type="text" id="campaignName" name="campaign_name" placeholder="Ej: Impuestos 2026" class="form-input">
+            </div>
+        </div>
+
+        <div id="uploadActions" class="upload-actions" style="display:none">
+            <button type="submit" id="processBtn" class="btn btn-primary btn-lg">Procesar</button>
+        </div>
+    </form>
+
+    <div id="spinner" class="spinner-overlay" style="display:none">
+        <div class="spinner"></div>
+        <p>Procesando archivos...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}

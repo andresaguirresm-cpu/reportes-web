@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Resultados - {{ campaign.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Resultados: {{ campaign.name }}</h1>
+    <span class="status-badge status-{{ run.status }}">{{ run.status }}</span>
+</div>
+
+<div class="results-summary">
+    <div class="summary-cards">
+        <div class="summary-card">
+            <div class="summary-value">{{ run.total_files }}</div>
+            <div class="summary-label">Archivos</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-value">{{ "{:,}".format(run.total_rows) }}</div>
+            <div class="summary-label">Filas</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-value">{{ run.platforms }}</div>
+            <div class="summary-label">Plataformas</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-value">{{ run.created_at.strftime('%d/%m/%Y %H:%M') }}</div>
+            <div class="summary-label">Fecha</div>
+        </div>
+    </div>
+</div>
+
+{% if files %}
+<div class="section-card">
+    <h2>Archivos Procesados</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Archivo</th>
+                <th>Plataforma</th>
+                <th>Filas</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in files %}
+            <tr>
+                <td>{{ f.filename }}</td>
+                <td><span class="platform-badge">{{ f.platform_detected or '-' }}</span></td>
+                <td>{{ "{:,}".format(f.rows_processed) }}</td>
+                <td><span class="status-badge status-{{ f.status }}">{{ f.status }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if alerts %}
+<div class="section-card">
+    <h2>Alertas
+        {% if criticos %}<span class="alert-count alert-critico">{{ criticos }} critico{{ 's' if criticos > 1 }}</span>{% endif %}
+        {% if errores %}<span class="alert-count alert-error">{{ errores }} error{{ 'es' if errores > 1 }}</span>{% endif %}
+        {% if advertencias %}<span class="alert-count alert-advertencia">{{ advertencias }} advertencia{{ 's' if advertencias > 1 }}</span>{% endif %}
+    </h2>
+    <div class="alerts-list">
+        {% for alert in alerts %}
+        <div class="alert-item alert-{{ alert.tipo|lower }}">
+            <div class="alert-badge">{{ alert.tipo }}</div>
+            <div class="alert-content">
+                <div class="alert-source">{{ alert.archivo }}</div>
+                <div class="alert-message">{{ alert.mensaje }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if run.status == 'completed' %}
+<div class="action-buttons">
+    <a href="{{ url_for('dashboard.dashboard', run_id=run.id) }}" class="btn btn-primary btn-lg">Ver Dashboard</a>
+    <a href="{{ url_for('download.download_excel', run_id=run.id) }}" class="btn btn-lg">Descargar Excel</a>
+    {% if alerts %}
+    <a href="{{ url_for('download.download_alerts', run_id=run.id) }}" class="btn btn-lg">Descargar Alertas</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
