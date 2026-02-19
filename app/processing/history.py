@@ -6,17 +6,28 @@ from app.models import RunHistory
 
 
 def get_last_history(campaign_id):
-    """Get the most recent history record for a campaign."""
-    history = RunHistory.query.filter_by(campaign_id=campaign_id)\
-        .order_by(RunHistory.created_at.desc()).first()
-    if not history:
-        return None
-    return {
-        'platforms': json.loads(history.platforms_json) if history.platforms_json else {},
-        'formats': json.loads(history.formats_json) if history.formats_json else {},
-        'dates': json.loads(history.dates_json) if history.dates_json else {},
-        'totals': json.loads(history.totals_json) if history.totals_json else {},
-    }
+    """Get the most recent per-campaign history record.
+
+    Only considers records saved under the per-campaign flow (marked with
+    per_campaign=True). Records from the old combined flow are ignored to
+    avoid false cross-campaign comparisons.
+    """
+    histories = RunHistory.query.filter_by(campaign_id=campaign_id)\
+        .order_by(RunHistory.created_at.desc()).all()
+
+    for history in histories:
+        platforms = json.loads(history.platforms_json) if history.platforms_json else {}
+        # Skip records from the old combined-upload flow (no per_campaign marker)
+        if not platforms.get('per_campaign'):
+            continue
+        return {
+            'platforms': platforms,
+            'formats': json.loads(history.formats_json) if history.formats_json else {},
+            'dates': json.loads(history.dates_json) if history.dates_json else {},
+            'totals': json.loads(history.totals_json) if history.totals_json else {},
+        }
+
+    return None
 
 
 def verificar_plataformas_faltantes(plataformas_actuales, campaign_id):
@@ -113,7 +124,13 @@ def save_history(run_id, campaign_id, plataformas, df_unified):
     """Save processing history to database."""
     from app import db
 
-    platforms_data = {'plataformas': list(plataformas)}
+    # per_campaign=True marks this record as coming from the per-campaign filtered
+    # flow. Records without this flag (old combined-upload runs) are ignored by
+    # get_last_history to prevent cross-campaign false comparisons.
+    platforms_data = {
+        'plataformas': list(plataformas),
+        'per_campaign': True,
+    }
 
     # Formats per platform
     formatos = {}
@@ -138,7 +155,6 @@ def save_history(run_id, campaign_id, plataformas, df_unified):
                     }
 
     # Totals per platform
-    totals_data = {}
     totales = df_unified.groupby('PLATAFORMA').agg({
         'GASTO': 'sum', 'IMPRESIONES': 'sum'
     }).to_dict('index')
