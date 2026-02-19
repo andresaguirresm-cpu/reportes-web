@@ -173,7 +173,8 @@ def process_campaign():
     if 'error' in result:
         return jsonify(result), 500
 
-    return redirect(url_for('dashboard.dashboard', run_id=result['run_id']))
+    return redirect(url_for('dashboard.dashboard', run_id=result['run_id'],
+                            session_id=session_id))
 
 
 def _process_session_files(session_dir, saved_paths, campaign_name, campaign_filter=None):
@@ -215,10 +216,8 @@ def _process_session_files(session_dir, saved_paths, campaign_name, campaign_fil
     result = process_uploaded_files(file_storages, run.id, campaign.id,
                                     campaign_filter=campaign_filter)
 
-    if 'error' not in result:
-        # Remove session files only after successful processing
-        shutil.rmtree(session_dir, ignore_errors=True)
-
+    # Session files are kept so the user can return and process other campaigns
+    # from the same push. cleanup_old_uploads() removes them after 24 hours.
     return result
 
 

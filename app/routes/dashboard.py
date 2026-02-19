@@ -16,10 +16,12 @@ def dashboard(run_id):
     alerts_errores = Alert.query.filter_by(run_id=run_id, tipo='ERROR').all()
 
     auto_print = request.args.get('print') == '1'
+    session_id = request.args.get('session_id', '')
 
     return render_template('dashboard.html',
                            run=run,
                            campaign=campaign,
                            alerts_criticos=alerts_criticos,
                            alerts_errores=alerts_errores,
-                           auto_print=auto_print)
+                           auto_print=auto_print,
+                           session_id=session_id)

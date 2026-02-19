@@ -44,7 +44,10 @@
 
         <header class="header">
             <div class="header-nav">
-                <a href="{{ url_for('main.campaigns') }}" class="btn btn-sm">← Campanas</a>
+                <a href="{{ url_for('main.campaigns') }}" class="btn btn-sm">← Historial</a>
+                {% if session_id %}
+                <a href="{{ url_for('upload.select_campaign', session_id=session_id) }}" class="btn btn-sm btn-accent">← Campanas de este push de data</a>
+                {% endif %}
             </div>
             <h1>{{ campaign.name|upper }}</h1>
             <p class="subtitle">Dashboard de Performance | <span class="brand">{{ campaign.brand_display or campaign.brand }}</span> | {{ run.created_at.strftime('%Y-%m-%d') }}</p>

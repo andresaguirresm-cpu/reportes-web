@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Smart Reports - Campanas{% endblock %}
+{% block title %}Smart Reports - Historial de Campanas{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>Campanas</h1>
+    <h1>Historial de Campanas</h1>
     <a href="{{ url_for('upload.upload_page') }}" class="btn btn-primary">Subir Archivos</a>
 </div>
 
@@ -20,8 +20,8 @@
         <div class="campaign-meta">
             {% if item.last_run %}
             <div class="meta-row">
-                <span class="meta-label">Ultima ejecucion:</span>
-                <span class="meta-value">{{ item.last_run.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                <span class="meta-label">Ultima actualizacion de datos:</span>
+                <span class="meta-value">{{ item.last_run.created_at.strftime('%d/%m/%Y') }}</span>
             </div>
             <div class="meta-row">
                 <span class="meta-label">Filas:</span>
@@ -56,7 +56,7 @@
 <div class="empty-state">
     <div class="empty-icon">📊</div>
     <h2>No hay campanas todavia</h2>
-    <p>Sube archivos CSV o Excel para crear tu primera campana</p>
+    <p>Suba archivos CSV o Excel para crear la primera campana</p>
     <a href="{{ url_for('upload.upload_page') }}" class="btn btn-primary">Subir Archivos</a>
 </div>
 {% endif %}

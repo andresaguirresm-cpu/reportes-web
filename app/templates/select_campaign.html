@@ -3,11 +3,11 @@
 
 {% block content %}
 <div class="page-header">
-    <h1>Campanas detectadas</h1>
+    <h1>Campanas detectadas en este push de data</h1>
     <a href="{{ url_for('upload.upload_page') }}" class="btn btn-sm">← Subir otros archivos</a>
 </div>
 
-<p class="select-subtitle">Se detectaron {{ campaigns|length }} campana{{ 's' if campaigns|length != 1 else '' }} en los archivos subidos. Selecciona la que queres procesar.</p>
+<p class="select-subtitle">Se detectaron {{ campaigns|length }} campana{{ 's' if campaigns|length != 1 else '' }} en los archivos subidos. Seleccione la que desea procesar.</p>
 
 <div class="campaigns-grid">
     {% for camp in campaigns %}
@@ -49,7 +49,6 @@
 
 {% block scripts %}
 <script>
-// Show spinner when any generate report form is submitted
 document.querySelectorAll('form').forEach(function(form) {
     form.addEventListener('submit', function() {
         document.body.insertAdjacentHTML('beforeend',
