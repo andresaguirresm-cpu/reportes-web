@@ -11,10 +11,40 @@
 </head>
 <body class="dashboard-body">
     <div class="container dashboard-container">
+        <!-- Alerts modal (CRITICO / ERROR) -->
+        {% if alerts_criticos or alerts_errores %}
+        <div id="alertsModal" class="modal-overlay" onclick="closeAlertsModal(event)">
+            <div class="modal-box">
+                <div class="modal-header">
+                    <span class="modal-icon">⚠️</span>
+                    <h2>Se encontraron problemas en el procesamiento</h2>
+                </div>
+                <div class="modal-body">
+                    {% for a in alerts_criticos %}
+                    <div class="modal-alert modal-alert-critico">
+                        <span class="alert-tipo">CRITICO</span>
+                        {% if a.archivo %}<span class="alert-file">{{ a.archivo }}</span>{% endif %}
+                        <span class="alert-msg">{{ a.mensaje }}</span>
+                    </div>
+                    {% endfor %}
+                    {% for a in alerts_errores %}
+                    <div class="modal-alert modal-alert-error">
+                        <span class="alert-tipo">ERROR</span>
+                        {% if a.archivo %}<span class="alert-file">{{ a.archivo }}</span>{% endif %}
+                        <span class="alert-msg">{{ a.mensaje }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="modal-footer">
+                    <button onclick="document.getElementById('alertsModal').style.display='none'" class="btn btn-primary">Entendido, ver dashboard</button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <header class="header">
             <div class="header-nav">
-                <a href="{{ url_for('upload.run_results', run_id=run.id) }}" class="btn btn-sm">← Resultados</a>
-                <a href="{{ url_for('main.index') }}" class="btn btn-sm">Campanas</a>
+                <a href="{{ url_for('main.campaigns') }}" class="btn btn-sm">← Campanas</a>
             </div>
             <h1>{{ campaign.name|upper }}</h1>
             <p class="subtitle">Dashboard de Performance | <span class="brand">{{ campaign.brand_display or campaign.brand }}</span> | {{ run.created_at.strftime('%Y-%m-%d') }}</p>
@@ -167,5 +197,17 @@
         const DATA_URL = "{{ url_for('api.run_data', run_id=run.id) }}";
     </script>
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script>
+        function closeAlertsModal(event) {
+            if (event.target === document.getElementById('alertsModal')) {
+                document.getElementById('alertsModal').style.display = 'none';
+            }
+        }
+        {% if auto_print %}
+        window.addEventListener('load', function() {
+            setTimeout(function() { window.print(); }, 500);
+        });
+        {% endif %}
+    </script>
 </body>
 </html>

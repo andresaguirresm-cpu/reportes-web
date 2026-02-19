@@ -42,11 +42,11 @@
             {% endif %}
         </div>
         <div class="campaign-actions">
-            {% if item.last_run %}
-            <a href="{{ url_for('upload.run_results', run_id=item.last_run.id) }}" class="btn btn-sm">Ver Resultados</a>
-            {% if item.last_run.status == 'completed' %}
-            <a href="{{ url_for('dashboard.dashboard', run_id=item.last_run.id) }}" class="btn btn-sm btn-accent">Dashboard</a>
-            {% endif %}
+            <a href="{{ url_for('upload.upload_update_mode', campaign_slug=item.campaign.slug) }}" class="btn btn-sm">Actualizar Data</a>
+            {% if item.last_run and item.last_run.status == 'completed' %}
+            <a href="{{ url_for('dashboard.dashboard', run_id=item.last_run_id) }}" class="btn btn-sm btn-accent">Dashboard</a>
+            <a href="{{ url_for('download.download_excel', run_id=item.last_run_id) }}" class="btn btn-sm">Excel</a>
+            <a href="{{ url_for('dashboard.dashboard', run_id=item.last_run_id) }}?print=1" class="btn btn-sm">PDF</a>
             {% endif %}
         </div>
     </div>

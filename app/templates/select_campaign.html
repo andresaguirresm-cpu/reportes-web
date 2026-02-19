@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Smart Reports - Seleccionar Campana{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Campanas detectadas</h1>
+    <a href="{{ url_for('upload.upload_page') }}" class="btn btn-sm">← Subir otros archivos</a>
+</div>
+
+<p class="select-subtitle">Se detectaron {{ campaigns|length }} campana{{ 's' if campaigns|length != 1 else '' }} en los archivos subidos. Selecciona la que queres procesar.</p>
+
+<div class="campaigns-grid">
+    {% for camp in campaigns %}
+    <div class="campaign-card">
+        <div class="campaign-header">
+            <h2>{{ camp.nombre }}</h2>
+        </div>
+        <div class="campaign-meta">
+            <div class="meta-row">
+                <span class="meta-label">Plataformas:</span>
+                <span class="meta-value">
+                    {% for p in camp.plataformas %}
+                    <span class="platform-badge platform-{{ p|lower }}">{{ p }}</span>
+                    {% endfor %}
+                </span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">Filas estimadas:</span>
+                <span class="meta-value">{{ "{:,}".format(camp.filas) }}</span>
+            </div>
+            {% if camp.fecha_min and camp.fecha_max %}
+            <div class="meta-row">
+                <span class="meta-label">Periodo:</span>
+                <span class="meta-value">{{ camp.fecha_min }} — {{ camp.fecha_max }}</span>
+            </div>
+            {% endif %}
+        </div>
+        <div class="campaign-actions">
+            <form method="post" action="{{ url_for('upload.process_campaign') }}">
+                <input type="hidden" name="session_id" value="{{ session_id }}">
+                <input type="hidden" name="campaign_name" value="{{ camp.nombre }}">
+                <button type="submit" class="btn btn-primary btn-sm">Generar Reporte</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Show spinner when any generate report form is submitted
+document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+        document.body.insertAdjacentHTML('beforeend',
+            '<div class="spinner-overlay" id="genSpinner" style="display:flex">' +
+            '<div class="spinner"></div><p>Generando reporte...</p></div>');
+    });
+});
+</script>
+{% endblock %}

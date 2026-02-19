@@ -6,7 +6,7 @@ import unicodedata
 
 PLATFORM_KEYWORDS = {
     'META': ['thruplays', 'thru plays', 'frecuencia', 'alcance', 'nombre del conjunto de anuncios'],
-    'GOOGLE': ['visualizaciones de trueview', 'trueview'],
+    'GOOGLE': ['visualizaciones de trueview', 'vistas de trueview', 'trueview'],
     'TIKTOK': ['6-second video views', '2-second video views', 'video views at 25%',
                'video views at 50%', 'paid likes', 'paid shares', 'paid comments',
                '6-second focused views', '15-second focused views']

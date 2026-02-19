@@ -1,18 +1,157 @@
 {% extends "base.html" %}
-{% block title %}Subir Archivos - Smart Reports{% endblock %}
+{% block title %}Smart Reports - Subir Archivos{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1>Subir Archivos</h1>
+{% if update_campaign %}
+<div class="update-banner">
+    <span class="update-icon">🔄</span>
+    <span>Actualizando datos para: <strong>{{ update_campaign.name }}</strong></span>
 </div>
+{% endif %}
+
+{% if not update_campaign %}
+<div class="welcome-section">
+    <div class="welcome-header">
+        <h1>Smart Reports</h1>
+        <p class="welcome-subtitle">Herramienta de reportes de performance para campanas digitales</p>
+    </div>
+
+    <div class="how-it-works">
+        <h2>Como funciona</h2>
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Sube tus archivos</h3>
+                    <p>Arrastra o selecciona los CSV/Excel exportados de <strong>Meta, Google Ads o TikTok</strong>. Podes subir varios archivos a la vez, incluso con multiples campanas.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Selecciona la campana</h3>
+                    <p>El sistema <strong>detecta todas las campanas</strong> presentes en los archivos. Elegis cual procesar y generamos el reporte.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Procesamiento automatico</h3>
+                    <p>Unificacion de columnas, parseo de nomenclatura y calculo de metricas (CTR, VTR, alcance deduplicado).</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>Dashboard interactivo</h3>
+                    <p>Explora <strong>40+ graficos</strong> con filtros por plataforma, etapa, formato y audiencia. Exporta a PDF o descarga el Excel unificado.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="what-you-get">
+        <h2>Que vas a obtener</h2>
+        <div class="features-grid">
+            <div class="feature-item">
+                <span class="feature-icon">📊</span>
+                <span><strong>Dashboard</strong> — KPIs, graficos de inversion, impresiones, clics, views, alcance y eficiencia</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">📋</span>
+                <span><strong>Reporte Excel</strong> — Datos unificados de todas las plataformas en un solo archivo</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">🔔</span>
+                <span><strong>Alertas</strong> — Deteccion automatica de datos faltantes, caidas de inversion y problemas</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">📈</span>
+                <span><strong>Historial</strong> — Compara con ejecuciones anteriores para detectar cambios</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <div class="upload-section">
+    <h2 class="upload-title">{% if update_campaign %}Subir Archivos de Actualizacion{% else %}Subir Archivos{% endif %}</h2>
+
+    <!-- Accordion: columnas requeridas -->
+    <div class="columns-accordion">
+        <button class="accordion-toggle" type="button" onclick="toggleAccordion()">
+            <span>Ver columnas requeridas por plataforma</span>
+            <span class="accordion-arrow" id="accordionArrow">▼</span>
+        </button>
+        <div class="accordion-body" id="accordionBody" style="display:none">
+            <div class="platform-tabs">
+                <button class="tab-btn active" onclick="showTab('meta', this)">Meta Ads</button>
+                <button class="tab-btn" onclick="showTab('google', this)">Google Ads</button>
+                <button class="tab-btn" onclick="showTab('tiktok', this)">TikTok Ads</button>
+            </div>
+
+            <div class="tab-content" id="tab-meta">
+                <p class="tab-note">Todas las columnas son obligatorias.</p>
+                <table class="columns-table">
+                    <thead><tr><th>Nombre en Espanol</th><th>Nombre en Ingles</th><th>Nota</th></tr></thead>
+                    <tbody>
+                        <tr><td>Nombre de la campana</td><td>Campaign Name</td><td></td></tr>
+                        <tr><td>Dia</td><td>Day</td><td>Breakout por dia — NO usar columnas de fecha de implementacion</td></tr>
+                        <tr><td>Impresiones</td><td>Impressions</td><td></td></tr>
+                        <tr><td>Importe gastado</td><td>Amount Spent</td><td></td></tr>
+                        <tr><td>Nombre del conjunto de anuncios</td><td>Ad Set Name</td><td></td></tr>
+                        <tr><td>Clics en el enlace</td><td>Link Clicks</td><td></td></tr>
+                        <tr><td>ThruPlays</td><td>ThruPlays</td><td></td></tr>
+                        <tr><td>Alcance</td><td>Reach</td><td></td></tr>
+                        <tr><td>Frecuencia</td><td>Frequency</td><td></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="tab-content" id="tab-google" style="display:none">
+                <p class="tab-note">Todas las columnas son obligatorias.</p>
+                <table class="columns-table">
+                    <thead><tr><th>Nombre en Espanol</th><th>Nombre en Ingles</th><th>Nota</th></tr></thead>
+                    <tbody>
+                        <tr><td>Campana</td><td>Campaign</td><td></td></tr>
+                        <tr><td>Dia</td><td>Day</td><td>Segmento de tiempo por dia — NO usar columnas de fecha de implementacion</td></tr>
+                        <tr><td>Impresiones</td><td>Impressions</td><td></td></tr>
+                        <tr><td>Coste</td><td>Cost</td><td></td></tr>
+                        <tr><td>Grupo de anuncios</td><td>Ad group</td><td></td></tr>
+                        <tr><td>Clics</td><td>Clicks</td><td></td></tr>
+                        <tr><td>Vistas de TrueView</td><td>TrueView views</td><td></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="tab-content" id="tab-tiktok" style="display:none">
+                <p class="tab-note">Todas las columnas son obligatorias.</p>
+                <table class="columns-table">
+                    <thead><tr><th>Nombre en Espanol</th><th>Nombre en Ingles</th><th>Nota</th></tr></thead>
+                    <tbody>
+                        <tr><td>Nombre de la campana</td><td>Campaign Name</td><td></td></tr>
+                        <tr><td>Dia</td><td>Day</td><td>Desglose diario — NO usar columnas de fecha de creacion o configuracion</td></tr>
+                        <tr><td>Impresiones</td><td>Impressions</td><td></td></tr>
+                        <tr><td>Gastos</td><td>Cost</td><td></td></tr>
+                        <tr><td>Nombre del grupo de anuncios</td><td>Ad Group Name</td><td></td></tr>
+                        <tr><td>Clics</td><td>Clicks</td><td></td></tr>
+                        <tr><td>Vistas de video focalizadas de 15 segundos</td><td>15-Second Focused Views</td><td>Comparable con ThruPlays de Meta. No usar variantes de 2 o 6 segundos.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <form id="uploadForm" action="{{ url_for('upload.upload_files') }}" method="post" enctype="multipart/form-data">
+        {% if update_campaign %}
+        <input type="hidden" name="target_slug" value="{{ update_campaign.slug }}">
+        {% endif %}
+
         <div id="dropZone" class="drop-zone">
             <div class="drop-icon">📁</div>
             <h3>Arrastra archivos aqui</h3>
             <p>o haz clic para seleccionar</p>
-            <p class="drop-hint">CSV, Excel (.xlsx, .xls)</p>
+            <p class="drop-hint">Formatos aceptados: CSV, Excel (.xlsx, .xls) — podes subir archivos de multiples plataformas</p>
             <input type="file" id="fileInput" name="files" multiple accept=".csv,.xlsx,.xls" class="file-input-hidden">
         </div>
 
@@ -21,25 +160,49 @@
             <div id="fileItems"></div>
         </div>
 
+        {% if not update_campaign %}
         <div class="upload-options">
             <div class="form-group">
-                <label for="campaignName">Nombre de campana (opcional - se auto-detecta)</label>
+                <label for="campaignName">Nombre de campana (opcional — se auto-detecta de la nomenclatura)</label>
                 <input type="text" id="campaignName" name="campaign_name" placeholder="Ej: Impuestos 2026" class="form-input">
             </div>
         </div>
+        {% endif %}
 
         <div id="uploadActions" class="upload-actions" style="display:none">
-            <button type="submit" id="processBtn" class="btn btn-primary btn-lg">Procesar</button>
+            <button type="submit" id="processBtn" class="btn btn-primary btn-lg">
+                {% if update_campaign %}Actualizar Datos{% else %}Detectar Campanas{% endif %}
+            </button>
         </div>
     </form>
 
     <div id="spinner" class="spinner-overlay" style="display:none">
         <div class="spinner"></div>
-        <p>Procesando archivos...</p>
+        <p>{% if update_campaign %}Procesando actualizacion...{% else %}Analizando archivos...{% endif %}</p>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+<script>
+function toggleAccordion() {
+    const body = document.getElementById('accordionBody');
+    const arrow = document.getElementById('accordionArrow');
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        arrow.textContent = '▲';
+    } else {
+        body.style.display = 'none';
+        arrow.textContent = '▼';
+    }
+}
+
+function showTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + tabId).style.display = 'block';
+    btn.classList.add('active');
+}
+</script>
 {% endblock %}

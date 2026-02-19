@@ -15,9 +15,11 @@ COLUMN_MAPPING = {
     'frecuencia': ['frecuencia', 'frequency', 'avg frequency'],
     'clics': ['clics en el enlace', 'link clicks', 'clics', 'clicks',
               'clicks (destination)', 'all clicks', 'clicks (all)'],
-    'views': ['thruplays', 'thru plays', 'visualizaciones de trueview', 'trueview views',
-              '15-second focused views', '6-second focused views', '6-second video views',
-              '2-second video views', 'vistas', 'views', 'video views'],
+    'views': ['thruplays', 'thru plays',
+              'visualizaciones de trueview', 'vistas de trueview',
+              'trueview views',
+              '15-second focused views',
+              'vistas', 'views', 'video views'],
     'impresiones': ['impresiones', 'impressions', 'impr.', 'imps'],
     'dia': ['dia', 'day', 'by day', 'date', 'fecha', 'reporting starts', 'dia', 'daa'],
     'campana': ['nombre de la campana', 'campaign name', 'campaign', 'campana',
@@ -229,7 +231,107 @@ def process_file_from_memory(file_storage, filename):
     return df_output, platform, alerts
 
 
-def process_uploaded_files(file_storages, run_id, campaign_id):
+def scan_campaigns_from_files(file_paths):
+    """Quick read to detect campaigns without processing or saving to DB.
+
+    Returns list of dicts: {nombre, plataformas, filas, fecha_min, fecha_max}
+    """
+    import os
+    campaign_data = {}
+
+    for file_path in file_paths:
+        filename = os.path.basename(file_path)
+        ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+
+        try:
+            with open(file_path, 'rb') as f:
+                file_bytes = f.read()
+
+            if ext == 'csv':
+                try:
+                    raw_text = file_bytes.decode('utf-8')
+                    encoding = 'utf-8'
+                except UnicodeDecodeError:
+                    raw_text = file_bytes.decode('latin-1')
+                    encoding = 'latin-1'
+
+                raw_lines = raw_text.split('\n')[:15]
+                skiprows = 0
+                kws = ['campana', 'campaign', 'dia', 'day', 'clics', 'clicks',
+                       'impresiones', 'impressions', 'gasto', 'cost', 'coste']
+                for i, line in enumerate(raw_lines):
+                    if sum(1 for kw in kws if kw in normalize(line)) >= 2:
+                        skiprows = i
+                        break
+                df = pd.read_csv(io.BytesIO(file_bytes), skiprows=skiprows,
+                                 on_bad_lines='skip', encoding=encoding)
+            else:
+                df_raw = pd.read_excel(io.BytesIO(file_bytes), header=None, nrows=10)
+                skiprows = detect_header_row(df_raw)
+                df = pd.read_excel(io.BytesIO(file_bytes), skiprows=skiprows)
+
+            platform = detect_platform(df)
+
+            campaign_col = None
+            for col in df.columns:
+                col_norm = normalize(str(col))
+                if 'campaign' in col_norm or 'campana' in col_norm:
+                    campaign_col = col
+                    break
+
+            date_col = None
+            for col in df.columns:
+                col_norm = normalize(str(col))
+                if col_norm in ['dia', 'day', 'date', 'fecha']:
+                    date_col = col
+                    break
+
+            if campaign_col is None:
+                continue
+
+            for raw_name in df[campaign_col].dropna().unique():
+                raw_name = str(raw_name).strip()
+                if not raw_name:
+                    continue
+
+                parsed = parse_nomenclature(raw_name)
+                display_name = parsed.get('CAMPANA', raw_name)
+
+                if display_name not in campaign_data:
+                    campaign_data[display_name] = {
+                        'nombre': display_name,
+                        'plataformas': set(),
+                        'filas': 0,
+                        'fechas': [],
+                    }
+
+                rows_for_name = df[df[campaign_col] == raw_name]
+                campaign_data[display_name]['plataformas'].add(platform)
+                campaign_data[display_name]['filas'] += len(rows_for_name)
+
+                if date_col:
+                    dates = pd.to_datetime(rows_for_name[date_col], errors='coerce').dropna()
+                    campaign_data[display_name]['fechas'].extend(dates.tolist())
+
+        except Exception:
+            continue
+
+    result = []
+    for display_name, data in campaign_data.items():
+        fecha_min = min(data['fechas']).strftime('%d/%m/%y') if data['fechas'] else None
+        fecha_max = max(data['fechas']).strftime('%d/%m/%y') if data['fechas'] else None
+        result.append({
+            'nombre': display_name,
+            'plataformas': sorted(data['plataformas']),
+            'filas': data['filas'],
+            'fecha_min': fecha_min,
+            'fecha_max': fecha_max,
+        })
+
+    return result
+
+
+def process_uploaded_files(file_storages, run_id, campaign_id, campaign_filter=None):
     """Process multiple uploaded files and save results to database.
 
     Args:
@@ -253,6 +355,21 @@ def process_uploaded_files(file_storages, run_id, campaign_id):
 
         try:
             df, platform, file_alerts = process_file_from_memory(file_storage, filename)
+
+            # Filter by campaign display name if specified
+            if campaign_filter and 'CAMPANA' in df.columns:
+                def _get_display(raw):
+                    p = parse_nomenclature(str(raw))
+                    return p.get('CAMPANA', str(raw).strip())
+                mask = df['CAMPANA'].apply(_get_display) == campaign_filter
+                df = df[mask].copy()
+                if len(df) == 0:
+                    if uploaded:
+                        uploaded.platform_detected = platform
+                        uploaded.rows_processed = 0
+                        uploaded.status = 'processed'
+                    continue
+
             all_data.append(df)
             all_alerts.extend(file_alerts)
             platforms_found.append(platform)

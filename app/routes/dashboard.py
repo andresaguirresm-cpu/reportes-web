@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, abort
-from app.models import ProcessingRun, Campaign
+from flask import Blueprint, render_template, abort, request
+from app.models import ProcessingRun, Campaign, Alert
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -12,6 +12,14 @@ def dashboard(run_id):
 
     campaign = Campaign.query.get(run.campaign_id)
 
+    alerts_criticos = Alert.query.filter_by(run_id=run_id, tipo='CRITICO').all()
+    alerts_errores = Alert.query.filter_by(run_id=run_id, tipo='ERROR').all()
+
+    auto_print = request.args.get('print') == '1'
+
     return render_template('dashboard.html',
                            run=run,
-                           campaign=campaign)
+                           campaign=campaign,
+                           alerts_criticos=alerts_criticos,
+                           alerts_errores=alerts_errores,
+                           auto_print=auto_print)
