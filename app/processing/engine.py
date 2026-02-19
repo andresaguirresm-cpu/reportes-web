@@ -295,6 +295,9 @@ def scan_campaigns_from_files(file_paths):
                     continue
 
                 parsed = parse_nomenclature(raw_name)
+                # Skip campaigns with legacy nomenclature (no CAMPO:VALOR segments found)
+                if not parsed:
+                    continue
                 display_name = parsed.get('CAMPANA', raw_name)
 
                 if display_name not in campaign_data:
