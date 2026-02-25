@@ -180,6 +180,15 @@ function updateAllCharts(data) {
     createBarChart('chartEfComCTR', groupByAvg(data, 'COM', 'CTR'), 'CTR %');
     createBarChart('chartEfComVTR', groupByAvg(data, 'COM', 'VTR'), 'VTR %');
 
+    const hasEstablecimiento = data.some(d => d.ESTABLECIMIENTO && d.ESTABLECIMIENTO !== '');
+    const secEst = document.getElementById('sectionEstablecimiento');
+    if (secEst) secEst.style.display = hasEstablecimiento ? '' : 'none';
+    if (hasEstablecimiento) {
+        createBarChart('chartEfEstImp', groupBy(data, 'ESTABLECIMIENTO', 'IMPRESIONES'), 'Impresiones');
+        createBarChart('chartEfEstCTR', groupByAvg(data, 'ESTABLECIMIENTO', 'CTR'), 'CTR %');
+        createBarChart('chartEfEstVTR', groupByAvg(data, 'ESTABLECIMIENTO', 'VTR'), 'VTR %');
+    }
+
     const daily = getDailyData(data);
     createSingleLineChart('chartEvoGasto', daily, 'gasto', 'Inversion ($)');
     createDualLineChart('chartEvoImpresiones', daily, 'imp', 'Impresiones', 'frec', 'Frecuencia', '');
