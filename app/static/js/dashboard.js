@@ -184,9 +184,9 @@ function updateAllCharts(data) {
     const secEst = document.getElementById('sectionEstablecimiento');
     if (secEst) secEst.style.display = hasEstablecimiento ? '' : 'none';
     if (hasEstablecimiento) {
-        createBarChart('chartEfEstImp', groupBy(data, 'ESTABLECIMIENTO', 'IMPRESIONES'), 'Impresiones');
-        createBarChart('chartEfEstCTR', groupByAvg(data, 'ESTABLECIMIENTO', 'CTR'), 'CTR %');
-        createBarChart('chartEfEstVTR', groupByAvg(data, 'ESTABLECIMIENTO', 'VTR'), 'VTR %');
+        createHorizontalBarChart('chartEfEstImp', groupBy(data, 'ESTABLECIMIENTO', 'IMPRESIONES'), 'Impresiones');
+        createHorizontalBarChart('chartEfEstCTR', groupByAvg(data, 'ESTABLECIMIENTO', 'CTR'), 'CTR %');
+        createHorizontalBarChart('chartEfEstVTR', groupByAvg(data, 'ESTABLECIMIENTO', 'VTR'), 'VTR %');
     }
 
     const daily = getDailyData(data);
@@ -443,6 +443,48 @@ function createDualLineChart(canvasId, dailyData, m1Key, m1Label, m2Key, m2Label
                 x: { ticks: { color: '#64748b', font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 15 }, grid: { display: false } },
                 y: { type: 'linear', position: 'left', ticks: { color: colors.cyan1, font: { size: 9 } }, grid: { color: 'rgba(0, 0, 0, 0.06)' }, title: { display: true, text: m1Label, color: colors.cyan1, font: { size: 10 } } },
                 y1: { type: 'linear', position: 'right', ticks: { color: '#ff6b9d', font: { size: 9 }, callback: (v) => v.toFixed(1) + (m2Suffix || '') }, grid: { drawOnChartArea: false }, title: { display: true, text: m2Label, color: '#ff6b9d', font: { size: 10 } } }
+            }
+        }
+    });
+}
+
+function createHorizontalBarChart(canvasId, grouped, label) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    if (charts[canvasId]) charts[canvasId].destroy();
+    const rawLabels = Object.keys(grouped);
+    const data = Object.values(grouped);
+    const total = data.reduce((s, v) => s + v, 0);
+
+    // Dynamic height: 44px per bar + 40px padding
+    const container = ctx.canvas.parentElement;
+    container.style.height = Math.max(180, rawLabels.length * 44 + 40) + 'px';
+
+    const palette   = [colors.cyan1a, colors.cyan2a, colors.cyan3a, colors.blue1a, colors.blue2a, colors.blue3a];
+    const palBorder = [colors.cyan1,  colors.cyan2,  colors.cyan3,  colors.blue1,  colors.blue2,  colors.blue3];
+    const bgColors     = rawLabels.map((_, i) => palette[i % palette.length]);
+    const borderColors = rawLabels.map((_, i) => palBorder[i % palBorder.length]);
+
+    charts[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: rawLabels, datasets: [{ label: label, data: data, backgroundColor: bgColors, borderColor: borderColors, borderWidth: 2, borderRadius: 4 }] },
+        options: {
+            indexAxis: 'y',
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    color: '#1e293b', anchor: 'end', align: 'right',
+                    font: { size: 10, weight: 'bold', family: 'Orbitron' },
+                    formatter: (value) => {
+                        if (label.includes('%')) return value.toFixed(2) + '%';
+                        const pct = total > 0 ? (value / total * 100).toFixed(1) : 0;
+                        return pct + '%';
+                    }
+                }
+            },
+            scales: {
+                x: { ticks: { color: 'rgba(100, 116, 139, 0.7)', font: { size: 9 } }, grid: { color: 'rgba(0, 0, 0, 0.08)' } },
+                y: { ticks: { color: '#64748b', font: { size: 10 }, autoSkip: false }, grid: { display: false } }
             }
         }
     });
