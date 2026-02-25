@@ -25,12 +25,13 @@ COLUMN_MAPPING = {
     'campana': ['nombre de la campana', 'campaign name', 'campaign', 'campana',
                 'campana', 'nombre de la campana'],
     'ad_group': ['nombre del conjunto de anuncios', 'ad set name', 'ad group name',
-                 'grupo de anuncios', 'ad set', 'ad group']
+                 'grupo de anuncios', 'ad set', 'ad group'],
+    'establecimiento': ['establecimiento', 'establishment', 'estab']
 }
 
 OUTPUT_COLUMNS = ['MARCA', 'PLATAFORMA', 'CAMPANA', 'AD GROUP', 'ETAPA', 'COMPRA',
-                  'COM', 'FORMATO', 'AUDIENCIA', 'GASTO', 'ALCANCE', 'FRECUENCIA',
-                  'CLICS', 'VIEWS', 'IMPRESIONES', 'CTR', 'VTR', 'DIA']
+                  'COM', 'FORMATO', 'AUDIENCIA', 'ESTABLECIMIENTO', 'GASTO', 'ALCANCE',
+                  'FRECUENCIA', 'CLICS', 'VIEWS', 'IMPRESIONES', 'CTR', 'VTR', 'DIA']
 
 
 def normalizar_nombre_campana(nombre):
@@ -425,6 +426,7 @@ def process_uploaded_files(file_storages, run_id, campaign_id, campaign_filter=N
             com=str(row.get('COM', '') or ''),
             formato=str(row.get('FORMATO', '') or ''),
             audiencia=str(row.get('AUDIENCIA', '') or ''),
+            establecimiento=str(row.get('ESTABLECIMIENTO', '') or ''),
             gasto=float(row.get('GASTO', 0) or 0),
             alcance=float(row.get('ALCANCE', 0) or 0),
             frecuencia=float(row.get('FRECUENCIA', 0) or 0),

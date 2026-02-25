@@ -36,5 +36,28 @@ def create_app(config_name=None):
     with app.app_context():
         from app import models  # noqa: F401
         db.create_all()
+        _run_migrations()
 
     return app
+
+
+def _run_migrations():
+    """Add new columns to existing tables without losing data."""
+    from sqlalchemy import inspect, text
+    inspector = inspect(db.engine)
+
+    # Only run if the table already exists
+    if 'report_rows' not in inspector.get_table_names():
+        return
+
+    existing = [col['name'] for col in inspector.get_columns('report_rows')]
+    pending = []
+
+    if 'establecimiento' not in existing:
+        pending.append("ALTER TABLE report_rows ADD COLUMN establecimiento VARCHAR(200) DEFAULT ''")
+
+    if pending:
+        with db.engine.connect() as conn:
+            for sql in pending:
+                conn.execute(text(sql))
+            conn.commit()
