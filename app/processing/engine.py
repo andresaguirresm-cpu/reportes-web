@@ -151,7 +151,7 @@ def process_file_from_memory(file_storage, filename):
             break
 
     # Extract nomenclature metadata
-    fields_to_extract = ['MARCA', 'PLATAFORMA', 'ETAPA', 'COMPRA', 'COM', 'FORMATO', 'AUDIENCIA']
+    fields_to_extract = ['MARCA', 'PLATAFORMA', 'ETAPA', 'COMPRA', 'COM', 'FORMATO', 'AUDIENCIA', 'ESTABLECIMIENTO']
     for field in fields_to_extract:
         df[field] = ''
 
