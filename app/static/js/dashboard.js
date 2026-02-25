@@ -457,7 +457,10 @@ function createHorizontalBarChart(canvasId, grouped, label) {
 
     // Dynamic height: 44px per bar + 40px padding
     const container = ctx.canvas.parentElement;
-    container.style.height = Math.max(180, rawLabels.length * 44 + 40) + 'px';
+    const h = Math.max(180, rawLabels.length * 44 + 40);
+    container.classList.add('chart-container--horizontal');
+    container.style.setProperty('--h-chart', h + 'px');
+    container.style.height = h + 'px';
 
     const palette   = [colors.cyan1a, colors.cyan2a, colors.cyan3a, colors.blue1a, colors.blue2a, colors.blue3a];
     const palBorder = [colors.cyan1,  colors.cyan2,  colors.cyan3,  colors.blue1,  colors.blue2,  colors.blue3];

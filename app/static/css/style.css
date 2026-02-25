@@ -826,6 +826,7 @@ body {
     .chart-container { height: 180px !important; }
     .chart-container.tall { height: 220px !important; }
     .chart-full .chart-container { height: 200px !important; }
+    .chart-container.chart-container--horizontal { height: var(--h-chart) !important; }
     canvas { max-width: 100% !important; display: block; margin: 0 auto; }
     .macro-title { break-before: page; page-break-before: always; margin-top: 0; padding: 15px 0; margin-bottom: 5px; }
     .section-title { margin: 25px 0 12px 0; padding-top: 10px; }
