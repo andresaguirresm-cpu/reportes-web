@@ -250,7 +250,7 @@ function createBarChart(canvasId, grouped, label, subtitles) {
     charts[canvasId] = new Chart(ctx, {
         type: 'bar',
         data: { labels: labels, datasets: [{ label: label, data: data, backgroundColor: bgColors.slice(0, labels.length), borderColor: borderColors.slice(0, labels.length), borderWidth: 2, borderRadius: 6 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { color: '#1e293b', anchor: 'end', align: 'top', font: { size: 10, weight: 'bold', family: 'Orbitron' }, formatter: (value) => { if (label.includes('%')) return value.toFixed(2) + '%'; const pct = total > 0 ? (value / total * 100).toFixed(1) : 0; return pct + '%'; } } }, scales: { x: { ticks: { color: '#64748b', font: { size: 9 }, maxRotation: 0, autoSkip: false }, grid: { display: false } }, y: { ticks: { color: 'rgba(100, 116, 139, 0.7)', font: { size: 9 } }, grid: { color: 'rgba(0, 0, 0, 0.08)' } } } }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { color: '#1e293b', anchor: 'end', align: 'top', font: { size: 10, weight: 'bold', family: 'Orbitron' }, formatter: (value) => { if (label.includes('%')) return value.toFixed(2) + '%'; return formatNum(Math.round(value)); } } }, scales: { x: { ticks: { color: '#64748b', font: { size: 9 }, maxRotation: 0, autoSkip: false }, grid: { display: false } }, y: { ticks: { color: 'rgba(100, 116, 139, 0.7)', font: { size: 9 } }, grid: { color: 'rgba(0, 0, 0, 0.08)' } } } }
     });
 }
 
@@ -514,8 +514,7 @@ function createHorizontalBarChart(canvasId, grouped, label) {
                     font: { size: 10, weight: 'bold', family: 'Orbitron' },
                     formatter: (value) => {
                         if (label.includes('%')) return value.toFixed(2) + '%';
-                        const pct = total > 0 ? (value / total * 100).toFixed(1) : 0;
-                        return pct + '%';
+                        return formatNum(Math.round(value));
                     }
                 }
             },
