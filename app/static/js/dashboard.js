@@ -160,6 +160,9 @@ function updateAllCharts(data) {
     createBarChart('chartViewsPlataforma', groupBy(data, 'PLATAFORMA', 'VIEWS'), 'Views');
     createBarChart('chartViewsFormato', groupBy(data, 'FORMATO', 'VIEWS'), 'Views', compraMap);
     createDoughnutChart('chartViewsAudiencia', groupBy(data, 'AUDIENCIA', 'VIEWS'));
+    createBarChart('chartRegPlataforma', groupBy(data, 'PLATAFORMA', 'REGISTROS'), 'Registros');
+    createDoughnutChart('chartRegCompra', groupBy(data, 'COMPRA', 'REGISTROS'));
+    createDoughnutChart('chartRegAudiencia', groupBy(data, 'AUDIENCIA', 'REGISTROS'));
     createBarChart('chartAlcancePlataforma', groupBy(data, 'PLATAFORMA', 'ALCANCE'), 'Alcance');
     createDoughnutChart('chartAlcanceAudiencia', groupBy(data, 'AUDIENCIA', 'ALCANCE'));
     createBarChart('chartFrecuenciaPlataforma', groupByAvg(data, 'PLATAFORMA', 'FRECUENCIA'), 'Frecuencia');
@@ -196,12 +199,14 @@ function updateAllCharts(data) {
 
     const daily = getDailyData(data);
     createSingleLineChart('chartEvoGasto', daily, 'gasto', 'Inversion ($)');
+    createSingleLineChart('chartEvoReg', daily, 'reg', 'Registros');
     createDualLineChart('chartEvoImpresiones', daily, 'imp', 'Impresiones', 'frec', 'Frecuencia', '');
     createDualLineChart('chartEvoClics', daily, 'clics', 'Clics', 'ctr', 'CTR', '%');
     createDualLineChart('chartEvoViews', daily, 'views', 'Video Views', 'vtr', 'VTR', '%');
 
     const dailyByPlat = getDailyDataByPlatform(data);
     createPlatformLineChart('chartEvoGastoPlat', dailyByPlat, 'gasto', 'Inversion ($)', true);
+    createPlatformLineChart('chartEvoRegPlat', dailyByPlat, 'reg', 'Registros', false);
     createPlatformLineChart('chartEvoImpPlat', dailyByPlat, 'imp', 'Impresiones', false);
     createPlatformLineChart('chartEvoClicsPlat', dailyByPlat, 'clics', 'Clics', false);
     createPlatformLineChart('chartEvoViewsPlat', dailyByPlat, 'views', 'Video Views', false);
@@ -248,11 +253,12 @@ function getDailyData(data) {
     data.forEach(d => {
         const day = d.DIA || '';
         if (!day || day === 'nan' || day === 'NaT') return;
-        if (!daily[day]) daily[day] = { gasto: 0, imp: 0, clics: 0, views: 0, frecSum: 0, frecCount: 0 };
+        if (!daily[day]) daily[day] = { gasto: 0, imp: 0, clics: 0, views: 0, reg: 0, frecSum: 0, frecCount: 0 };
         daily[day].gasto += (d.GASTO || 0);
         daily[day].imp += (d.IMPRESIONES || 0);
         daily[day].clics += (d.CLICS || 0);
         daily[day].views += (d.VIEWS || 0);
+        daily[day].reg += (d.REGISTROS || 0);
         if (d.FRECUENCIA > 0) { daily[day].frecSum += d.FRECUENCIA; daily[day].frecCount += 1; }
     });
     const sorted = Object.keys(daily).sort((a, b) => {
@@ -266,6 +272,7 @@ function getDailyData(data) {
         imp: daily[day].imp,
         clics: daily[day].clics,
         views: daily[day].views,
+        reg: daily[day].reg,
         ctr: daily[day].imp > 0 ? (daily[day].clics / daily[day].imp * 100) : 0,
         vtr: daily[day].imp > 0 ? (daily[day].views / daily[day].imp * 100) : 0,
         frec: daily[day].frecCount > 0 ? daily[day].frecSum / daily[day].frecCount : 0
@@ -280,11 +287,12 @@ function getDailyDataByPlatform(data) {
         const day = d.DIA || '';
         const plat = d.PLATAFORMA || '';
         if (!day || !plat) return;
-        if (!dailyByPlat[plat][day]) dailyByPlat[plat][day] = { gasto: 0, imp: 0, clics: 0, views: 0 };
+        if (!dailyByPlat[plat][day]) dailyByPlat[plat][day] = { gasto: 0, imp: 0, clics: 0, views: 0, reg: 0 };
         dailyByPlat[plat][day].gasto += (d.GASTO || 0);
         dailyByPlat[plat][day].imp += (d.IMPRESIONES || 0);
         dailyByPlat[plat][day].clics += (d.CLICS || 0);
         dailyByPlat[plat][day].views += (d.VIEWS || 0);
+        dailyByPlat[plat][day].reg += (d.REGISTROS || 0);
     });
     const allDays = [...new Set(data.map(d => d.DIA))].filter(Boolean).sort((a, b) => {
         const [da, ma, ya] = a.split('/').map(Number);
@@ -298,7 +306,8 @@ function getDailyDataByPlatform(data) {
             gasto: dailyByPlat[p][day] ? parseFloat(dailyByPlat[p][day].gasto.toFixed(2)) : 0,
             imp: dailyByPlat[p][day] ? dailyByPlat[p][day].imp : 0,
             clics: dailyByPlat[p][day] ? dailyByPlat[p][day].clics : 0,
-            views: dailyByPlat[p][day] ? dailyByPlat[p][day].views : 0
+            views: dailyByPlat[p][day] ? dailyByPlat[p][day].views : 0,
+            reg: dailyByPlat[p][day] ? dailyByPlat[p][day].reg : 0
         }));
     });
     result._labels = allDays.map(d => d.substring(0, 5));
