@@ -166,27 +166,45 @@ function updateAllCharts(data) {
     createBarChart('chartAlcancePlataforma', groupBy(data, 'PLATAFORMA', 'ALCANCE'), 'Alcance');
     createDoughnutChart('chartAlcanceAudiencia', groupBy(data, 'AUDIENCIA', 'ALCANCE'));
     createBarChart('chartFrecuenciaPlataforma', groupByAvg(data, 'PLATAFORMA', 'FRECUENCIA'), 'Frecuencia');
-    createBarChart('chartEfPlatImp', groupBy(data, 'PLATAFORMA', 'IMPRESIONES'), 'Impresiones');
-    createBarChart('chartEfPlatCTR', groupByAvg(data, 'PLATAFORMA', 'CTR'), 'CTR %');
-    createBarChart('chartEfPlatVTR', groupByAvg(data, 'PLATAFORMA', 'VTR'), 'VTR %');
-    createBarChart('chartEfEtapaImp', groupBy(data, 'ETAPA', 'IMPRESIONES'), 'Impresiones');
-    createBarChart('chartEfEtapaCTR', groupByAvg(data, 'ETAPA', 'CTR'), 'CTR %');
-    createBarChart('chartEfEtapaVTR', groupByAvg(data, 'ETAPA', 'VTR'), 'VTR %');
-    createBarChart('chartEfCompraImp', groupBy(data, 'COMPRA', 'IMPRESIONES'), 'Impresiones');
-    createBarChart('chartEfCompraCTR', groupByAvg(data, 'COMPRA', 'CTR'), 'CTR %');
-    createBarChart('chartEfCompraVTR', groupByAvg(data, 'COMPRA', 'VTR'), 'VTR %');
-    createBarChart('chartEfFmtImp', groupBy(data, 'FORMATO', 'IMPRESIONES'), 'Impresiones', compraMap);
-    createBarChart('chartEfFmtCTR', groupByAvg(data, 'FORMATO', 'CTR'), 'CTR %', compraMap);
-    createBarChart('chartEfFmtVTR', groupByAvg(data, 'FORMATO', 'VTR'), 'VTR %', compraMap);
-    createBarChart('chartEfAudImp', groupBy(data, 'AUDIENCIA', 'IMPRESIONES'), 'Impresiones');
-    createBarChart('chartEfAudCTR', groupByAvg(data, 'AUDIENCIA', 'CTR'), 'CTR %');
-    createBarChart('chartEfAudVTR', groupByAvg(data, 'AUDIENCIA', 'VTR'), 'VTR %');
-    createBarChart('chartEfComImp', groupBy(data, 'COM', 'IMPRESIONES'), 'Impresiones');
-    createBarChart('chartEfComCTR', groupByAvg(data, 'COM', 'CTR'), 'CTR %');
-    createBarChart('chartEfComVTR', groupByAvg(data, 'COM', 'VTR'), 'VTR %');
+    createBarChart('chartEfPlatImp',   groupBy(data, 'PLATAFORMA', 'IMPRESIONES'), 'Impresiones');
+    createBarChart('chartEfPlatClics', groupBy(data, 'PLATAFORMA', 'CLICS'), 'Clics');
+    createBarChart('chartEfPlatViews', groupBy(data, 'PLATAFORMA', 'VIEWS'), 'Views');
+    createBarChart('chartEfPlatCTR',   groupByAvg(data, 'PLATAFORMA', 'CTR'), 'CTR %');
+    createBarChart('chartEfPlatVTR',   groupByAvg(data, 'PLATAFORMA', 'VTR'), 'VTR %');
+
+    createBarChart('chartEfEtapaImp',   groupBy(data, 'ETAPA', 'IMPRESIONES'), 'Impresiones');
+    createBarChart('chartEfEtapaClics', groupBy(data, 'ETAPA', 'CLICS'), 'Clics');
+    createBarChart('chartEfEtapaViews', groupBy(data, 'ETAPA', 'VIEWS'), 'Views');
+    createBarChart('chartEfEtapaCTR',   groupByAvg(data, 'ETAPA', 'CTR'), 'CTR %');
+    createBarChart('chartEfEtapaVTR',   groupByAvg(data, 'ETAPA', 'VTR'), 'VTR %');
+
+    createBarChart('chartEfCompraImp',   groupBy(data, 'COMPRA', 'IMPRESIONES'), 'Impresiones');
+    createBarChart('chartEfCompraClics', groupBy(data, 'COMPRA', 'CLICS'), 'Clics');
+    createBarChart('chartEfCompraViews', groupBy(data, 'COMPRA', 'VIEWS'), 'Views');
+    createBarChart('chartEfCompraCTR',   groupByAvg(data, 'COMPRA', 'CTR'), 'CTR %');
+    createBarChart('chartEfCompraVTR',   groupByAvg(data, 'COMPRA', 'VTR'), 'VTR %');
+
+    createBarChart('chartEfFmtImp',   groupBy(data, 'FORMATO', 'IMPRESIONES'), 'Impresiones', compraMap);
+    createBarChart('chartEfFmtClics', groupBy(data, 'FORMATO', 'CLICS'), 'Clics', compraMap);
+    createBarChart('chartEfFmtViews', groupBy(data, 'FORMATO', 'VIEWS'), 'Views', compraMap);
+    createBarChart('chartEfFmtCTR',   groupByAvg(data, 'FORMATO', 'CTR'), 'CTR %', compraMap);
+    createBarChart('chartEfFmtVTR',   groupByAvg(data, 'FORMATO', 'VTR'), 'VTR %', compraMap);
+
+    createBarChart('chartEfAudImp',   groupBy(data, 'AUDIENCIA', 'IMPRESIONES'), 'Impresiones');
+    createBarChart('chartEfAudClics', groupBy(data, 'AUDIENCIA', 'CLICS'), 'Clics');
+    createBarChart('chartEfAudViews', groupBy(data, 'AUDIENCIA', 'VIEWS'), 'Views');
+    createBarChart('chartEfAudCTR',   groupByAvg(data, 'AUDIENCIA', 'CTR'), 'CTR %');
+    createBarChart('chartEfAudVTR',   groupByAvg(data, 'AUDIENCIA', 'VTR'), 'VTR %');
+
+    createBarChart('chartEfComImp',   groupBy(data, 'COM', 'IMPRESIONES'), 'Impresiones');
+    createBarChart('chartEfComClics', groupBy(data, 'COM', 'CLICS'), 'Clics');
+    createBarChart('chartEfComViews', groupBy(data, 'COM', 'VIEWS'), 'Views');
+    createBarChart('chartEfComCTR',   groupByAvg(data, 'COM', 'CTR'), 'CTR %');
+    createBarChart('chartEfComVTR',   groupByAvg(data, 'COM', 'VTR'), 'VTR %');
+
     createBarChart('chartEfRegPlat', groupBy(data, 'PLATAFORMA', 'REGISTROS'), 'Registros');
-    createBarChart('chartEfRegFmt', groupBy(data, 'FORMATO', 'REGISTROS'), 'Registros');
-    createBarChart('chartEfRegAud', groupBy(data, 'AUDIENCIA', 'REGISTROS'), 'Registros');
+    createBarChart('chartEfRegFmt',  groupBy(data, 'FORMATO', 'REGISTROS'), 'Registros');
+    createBarChart('chartEfRegAud',  groupBy(data, 'AUDIENCIA', 'REGISTROS'), 'Registros');
 
     const hasEstablecimiento = data.some(d => d.ESTABLECIMIENTO && d.ESTABLECIMIENTO !== '');
     const secEst = document.getElementById('sectionEstablecimiento');
