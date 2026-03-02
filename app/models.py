@@ -55,6 +55,7 @@ class ReportRow(db.Model):
     clics = db.Column(db.Float, default=0)
     views = db.Column(db.Float, default=0)
     impresiones = db.Column(db.Float, default=0)
+    registros = db.Column(db.Integer, default=0)
     ctr = db.Column(db.Float, default=0)
     vtr = db.Column(db.Float, default=0)
     dia = db.Column(db.String(20), default='')
@@ -77,6 +78,7 @@ class ReportRow(db.Model):
             'CLICS': self.clics or 0,
             'VIEWS': self.views or 0,
             'IMPRESIONES': self.impresiones or 0,
+            'REGISTROS': self.registros or 0,
             'CTR': self.ctr or 0,
             'VTR': self.vtr or 0,
             'DIA': self.dia or '',

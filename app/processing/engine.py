@@ -26,12 +26,15 @@ COLUMN_MAPPING = {
                 'campana', 'nombre de la campana'],
     'ad_group': ['nombre del conjunto de anuncios', 'ad set name', 'ad group name',
                  'grupo de anuncios', 'ad set', 'ad group'],
-    'establecimiento': ['establecimiento', 'establishment', 'estab']
+    'establecimiento': ['establecimiento', 'establishment', 'estab'],
+    'registros': ['conversiones', 'conversions', 'todas las conv.', 'all conversions',
+                  'registro completado', 'registros completados', 'registros completado',
+                  'registro completados', 'completed registration', 'registrations']
 }
 
 OUTPUT_COLUMNS = ['MARCA', 'PLATAFORMA', 'CAMPANA', 'AD GROUP', 'ETAPA', 'COMPRA',
                   'COM', 'FORMATO', 'AUDIENCIA', 'ESTABLECIMIENTO', 'GASTO', 'ALCANCE',
-                  'FRECUENCIA', 'CLICS', 'VIEWS', 'IMPRESIONES', 'CTR', 'VTR', 'DIA']
+                  'FRECUENCIA', 'CLICS', 'VIEWS', 'IMPRESIONES', 'REGISTROS', 'CTR', 'VTR', 'DIA']
 
 
 def normalizar_nombre_campana(nombre):
@@ -216,6 +219,10 @@ def process_file_from_memory(file_storage, filename):
     for col in numeric_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+
+    # REGISTROS: integer only — conversions don't have decimals
+    if 'REGISTROS' in df.columns:
+        df['REGISTROS'] = pd.to_numeric(df['REGISTROS'], errors='coerce').fillna(0).round().astype(int)
 
     # Format date — drop rows where date can't be parsed (they become "nan" and create ghost data points)
     if 'DIA' in df.columns:
@@ -433,6 +440,7 @@ def process_uploaded_files(file_storages, run_id, campaign_id, campaign_filter=N
             clics=float(row.get('CLICS', 0) or 0),
             views=float(row.get('VIEWS', 0) or 0),
             impresiones=float(row.get('IMPRESIONES', 0) or 0),
+            registros=int(row.get('REGISTROS', 0) or 0),
             ctr=float(row.get('CTR', 0) or 0),
             vtr=float(row.get('VTR', 0) or 0),
             dia=str(row.get('DIA', '') or ''),

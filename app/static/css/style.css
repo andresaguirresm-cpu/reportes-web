@@ -659,7 +659,7 @@ body {
 
 .kpis {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 12px;
     margin-bottom: 25px;
 }
@@ -683,6 +683,10 @@ body {
     font-size: 1.3rem;
     font-weight: 700;
     color: #1e293b;
+}
+.kpi-highlight {
+    border-color: rgba(0, 119, 182, 0.4);
+    background: linear-gradient(135deg, #fff 60%, rgba(0, 119, 182, 0.06));
 }
 
 .macro-title {
@@ -1031,6 +1035,9 @@ body {
     .charts-row { grid-template-columns: repeat(2, 1fr); }
     .kpis { grid-template-columns: repeat(3, 1fr); }
     .summary-cards { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1201px) {
+    .kpis { grid-template-columns: repeat(5, 1fr); }
 }
 @media (max-width: 768px) {
     .charts-row { grid-template-columns: 1fr; }

@@ -132,6 +132,7 @@ function updateKPIs(data) {
     const dedup = calcAlcanceDedup(data, 72);
     const ctr = imp > 0 ? (clics / imp * 100) : 0;
     const vtr = imp > 0 ? (views / imp * 100) : 0;
+    const registros = data.reduce((s, d) => s + (d.REGISTROS || 0), 0);
     document.getElementById('kpiGasto').textContent = '$' + formatNum(gasto.toFixed(2));
     document.getElementById('kpiImpresiones').textContent = formatNum(imp);
     document.getElementById('kpiClics').textContent = formatNum(clics);
@@ -140,6 +141,7 @@ function updateKPIs(data) {
     document.getElementById('kpiFrecuencia').textContent = dedup.frecuencia.toFixed(2);
     document.getElementById('kpiCTR').textContent = ctr.toFixed(2) + '%';
     document.getElementById('kpiVTR').textContent = vtr.toFixed(2) + '%';
+    document.getElementById('kpiRegistros').textContent = formatNum(registros);
 }
 
 function formatNum(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
@@ -179,6 +181,9 @@ function updateAllCharts(data) {
     createBarChart('chartEfComImp', groupBy(data, 'COM', 'IMPRESIONES'), 'Impresiones');
     createBarChart('chartEfComCTR', groupByAvg(data, 'COM', 'CTR'), 'CTR %');
     createBarChart('chartEfComVTR', groupByAvg(data, 'COM', 'VTR'), 'VTR %');
+    createBarChart('chartEfRegPlat', groupBy(data, 'PLATAFORMA', 'REGISTROS'), 'Registros');
+    createBarChart('chartEfRegFmt', groupBy(data, 'FORMATO', 'REGISTROS'), 'Registros');
+    createBarChart('chartEfRegAud', groupBy(data, 'AUDIENCIA', 'REGISTROS'), 'Registros');
 
     const hasEstablecimiento = data.some(d => d.ESTABLECIMIENTO && d.ESTABLECIMIENTO !== '');
     const secEst = document.getElementById('sectionEstablecimiento');
