@@ -210,9 +210,11 @@ function updateAllCharts(data) {
     const secEst = document.getElementById('sectionEstablecimiento');
     if (secEst) secEst.style.display = hasEstablecimiento ? '' : 'none';
     if (hasEstablecimiento) {
-        createHorizontalBarChart('chartEfEstImp', groupBy(data, 'ESTABLECIMIENTO', 'IMPRESIONES'), 'Impresiones');
-        createHorizontalBarChart('chartEfEstCTR', groupByAvg(data, 'ESTABLECIMIENTO', 'CTR'), 'CTR %');
-        createHorizontalBarChart('chartEfEstVTR', groupByAvg(data, 'ESTABLECIMIENTO', 'VTR'), 'VTR %');
+        createHorizontalBarChart('chartEfEstImp',   groupBy(data, 'ESTABLECIMIENTO', 'IMPRESIONES'), 'Impresiones');
+        createHorizontalBarChart('chartEfEstClics', groupBy(data, 'ESTABLECIMIENTO', 'CLICS'), 'Clics');
+        createHorizontalBarChart('chartEfEstViews', groupBy(data, 'ESTABLECIMIENTO', 'VIEWS'), 'Views');
+        createHorizontalBarChart('chartEfEstCTR',   groupByAvg(data, 'ESTABLECIMIENTO', 'CTR'), 'CTR %');
+        createHorizontalBarChart('chartEfEstVTR',   groupByAvg(data, 'ESTABLECIMIENTO', 'VTR'), 'VTR %');
     }
 
     const daily = getDailyData(data);
