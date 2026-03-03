@@ -51,39 +51,58 @@ function init() {
     updateDashboard();
 }
 
+const FILTER_MAP = {
+    'filterPlataforma': 'PLATAFORMA', 'filterEtapa': 'ETAPA',
+    'filterCompra': 'COMPRA', 'filterFormato': 'FORMATO', 'filterAudiencia': 'AUDIENCIA'
+};
+
 function populateFilters() {
-    const fields = {
-        'filterPlataforma': 'PLATAFORMA', 'filterEtapa': 'ETAPA',
-        'filterCompra': 'COMPRA', 'filterFormato': 'FORMATO', 'filterAudiencia': 'AUDIENCIA'
-    };
-    Object.entries(fields).forEach(([selectId, field]) => {
+    Object.entries(FILTER_MAP).forEach(([filterId, field]) => {
         const values = [...new Set(rawData.map(d => d[field]))].filter(Boolean).sort();
-        const select = document.getElementById(selectId);
+        const container = document.getElementById(filterId);
+        const dropdown = container.querySelector('.multi-select-dropdown');
+
         values.forEach(v => {
-            const opt = document.createElement('option');
-            opt.value = v; opt.textContent = v;
-            select.appendChild(opt);
+            const lbl = document.createElement('label');
+            lbl.className = 'multi-select-option';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox'; cb.value = v;
+            lbl.appendChild(cb);
+            lbl.appendChild(document.createTextNode(' ' + v));
+            dropdown.appendChild(lbl);
+        });
+
+        container.querySelector('.multi-select-toggle').addEventListener('click', e => {
+            e.stopPropagation();
+            document.querySelectorAll('.multi-select-dropdown').forEach(d => {
+                if (d !== dropdown) d.classList.remove('open');
+            });
+            dropdown.classList.toggle('open');
+        });
+
+        dropdown.addEventListener('change', () => {
+            const checked = [...dropdown.querySelectorAll('input:checked')].map(i => i.value);
+            const toggle = container.querySelector('.multi-select-toggle');
+            if (checked.length === 0) toggle.textContent = 'Todas';
+            else if (checked.length <= 2) toggle.textContent = checked.join(', ');
+            else toggle.textContent = checked.length + ' seleccionados';
+            updateDashboard();
         });
     });
-}
 
-function setupFilterListeners() {
-    ['filterPlataforma', 'filterEtapa', 'filterCompra', 'filterFormato', 'filterAudiencia'].forEach(id => {
-        document.getElementById(id).addEventListener('change', updateDashboard);
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.multi-select-dropdown.open').forEach(d => d.classList.remove('open'));
     });
 }
 
+function setupFilterListeners() { /* listeners handled in populateFilters */ }
+
 function getFilteredData() {
-    const filters = {
-        PLATAFORMA: document.getElementById('filterPlataforma').value,
-        ETAPA: document.getElementById('filterEtapa').value,
-        COMPRA: document.getElementById('filterCompra').value,
-        FORMATO: document.getElementById('filterFormato').value,
-        AUDIENCIA: document.getElementById('filterAudiencia').value
-    };
     return rawData.filter(d => {
-        for (let [key, val] of Object.entries(filters)) {
-            if (val && d[key] !== val) return false;
+        for (const [filterId, field] of Object.entries(FILTER_MAP)) {
+            const container = document.getElementById(filterId);
+            const checked = [...container.querySelectorAll('input:checked')].map(i => i.value);
+            if (checked.length > 0 && !checked.includes(d[field])) return false;
         }
         return true;
     });
@@ -163,6 +182,8 @@ function updateAllCharts(data) {
     createBarChart('chartRegPlataforma', groupBy(data, 'PLATAFORMA', 'REGISTROS'), 'Registros');
     createDoughnutChart('chartRegCompra', groupBy(data, 'COMPRA', 'REGISTROS'));
     createDoughnutChart('chartRegAudiencia', groupBy(data, 'AUDIENCIA', 'REGISTROS'));
+    createBarChart('chartCPAPlataforma', groupByCPA(data, 'PLATAFORMA'), 'CPA ($)');
+    createBarChart('chartCPAAudiencia', groupByCPA(data, 'AUDIENCIA'), 'CPA ($)');
     createBarChart('chartAlcancePlataforma', groupBy(data, 'PLATAFORMA', 'ALCANCE'), 'Alcance');
     createDoughnutChart('chartAlcanceAudiencia', groupBy(data, 'AUDIENCIA', 'ALCANCE'));
     createBarChart('chartFrecuenciaPlataforma', groupByAvg(data, 'PLATAFORMA', 'FRECUENCIA'), 'Frecuencia');
@@ -220,6 +241,7 @@ function updateAllCharts(data) {
     const daily = getDailyData(data);
     createSingleLineChart('chartEvoGasto', daily, 'gasto', 'Inversion ($)');
     createSingleLineChart('chartEvoReg', daily, 'reg', 'Registros');
+    createSingleLineChart('chartEvoCPA', daily, 'cpa', 'CPA ($)');
     createDualLineChart('chartEvoImpresiones', daily, 'imp', 'Impresiones', 'frec', 'Frecuencia', '');
     createDualLineChart('chartEvoClics', daily, 'clics', 'Clics', 'ctr', 'CTR', '%');
     createDualLineChart('chartEvoViews', daily, 'views', 'Video Views', 'vtr', 'VTR', '%');
@@ -227,6 +249,7 @@ function updateAllCharts(data) {
     const dailyByPlat = getDailyDataByPlatform(data);
     createPlatformLineChart('chartEvoGastoPlat', dailyByPlat, 'gasto', 'Inversion ($)', true);
     createPlatformLineChart('chartEvoRegPlat', dailyByPlat, 'reg', 'Registros', false);
+    createPlatformLineChart('chartEvoCPAPlat', dailyByPlat, 'cpa', 'CPA ($)', true);
     createPlatformLineChart('chartEvoImpPlat', dailyByPlat, 'imp', 'Impresiones', false);
     createPlatformLineChart('chartEvoClicsPlat', dailyByPlat, 'clics', 'Clics', false);
     createPlatformLineChart('chartEvoViewsPlat', dailyByPlat, 'views', 'Video Views', false);
@@ -250,7 +273,7 @@ function createBarChart(canvasId, grouped, label, subtitles) {
     charts[canvasId] = new Chart(ctx, {
         type: 'bar',
         data: { labels: labels, datasets: [{ label: label, data: data, backgroundColor: bgColors.slice(0, labels.length), borderColor: borderColors.slice(0, labels.length), borderWidth: 2, borderRadius: 6 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { color: '#1e293b', anchor: 'end', align: 'top', font: { size: 10, weight: 'bold', family: 'Orbitron' }, formatter: (value) => { if (label.includes('%')) return value.toFixed(2) + '%'; return formatNum(Math.round(value)); } } }, scales: { x: { ticks: { color: '#64748b', font: { size: 9 }, maxRotation: 0, autoSkip: false }, grid: { display: false } }, y: { ticks: { color: 'rgba(100, 116, 139, 0.7)', font: { size: 9 } }, grid: { color: 'rgba(0, 0, 0, 0.08)' } } } }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { color: '#1e293b', anchor: 'end', align: 'top', font: { size: 10, weight: 'bold', family: 'Rajdhani' }, formatter: (value) => { if (label.includes('%')) return value.toFixed(2) + '%'; if (label.includes('$')) return '$' + formatNum(Math.round(value)); return formatNum(Math.round(value)); } } }, scales: { x: { ticks: { color: '#64748b', font: { size: 9 }, maxRotation: 0, autoSkip: false }, grid: { display: false } }, y: { ticks: { color: 'rgba(100, 116, 139, 0.7)', font: { size: 9 } }, grid: { color: 'rgba(0, 0, 0, 0.08)' } } } }
     });
 }
 
@@ -264,7 +287,7 @@ function createDoughnutChart(canvasId, grouped) {
     charts[canvasId] = new Chart(ctx, {
         type: 'doughnut',
         data: { labels: labels, datasets: [{ data: data, backgroundColor: bgColors.slice(0, labels.length), borderColor: borderColors.slice(0, labels.length), borderWidth: 2 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#64748b', font: { size: 10 }, boxWidth: 12, padding: 8 } }, datalabels: { color: '#1e293b', font: { size: 11, weight: 'bold', family: 'Orbitron' }, formatter: (value) => { const pct = total > 0 ? (value / total * 100).toFixed(1) : 0; return pct + '%'; } } } }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#64748b', font: { size: 10 }, boxWidth: 12, padding: 8 } }, datalabels: { color: '#1e293b', font: { size: 11, weight: 'bold', family: 'Rajdhani' }, formatter: (value) => { const pct = total > 0 ? (value / total * 100).toFixed(1) : 0; return pct + '%'; } } } }
     });
 }
 
@@ -293,6 +316,7 @@ function getDailyData(data) {
         clics: daily[day].clics,
         views: daily[day].views,
         reg: daily[day].reg,
+        cpa: daily[day].reg > 0 ? parseFloat((daily[day].gasto / daily[day].reg).toFixed(2)) : 0,
         ctr: daily[day].imp > 0 ? (daily[day].clics / daily[day].imp * 100) : 0,
         vtr: daily[day].imp > 0 ? (daily[day].views / daily[day].imp * 100) : 0,
         frec: daily[day].frecCount > 0 ? daily[day].frecSum / daily[day].frecCount : 0
@@ -327,7 +351,8 @@ function getDailyDataByPlatform(data) {
             imp: dailyByPlat[p][day] ? dailyByPlat[p][day].imp : 0,
             clics: dailyByPlat[p][day] ? dailyByPlat[p][day].clics : 0,
             views: dailyByPlat[p][day] ? dailyByPlat[p][day].views : 0,
-            reg: dailyByPlat[p][day] ? dailyByPlat[p][day].reg : 0
+            reg: dailyByPlat[p][day] ? dailyByPlat[p][day].reg : 0,
+            cpa: (dailyByPlat[p][day] && dailyByPlat[p][day].reg > 0) ? parseFloat((dailyByPlat[p][day].gasto / dailyByPlat[p][day].reg).toFixed(2)) : 0
         }));
     });
     result._labels = allDays.map(d => d.substring(0, 5));
@@ -511,7 +536,7 @@ function createHorizontalBarChart(canvasId, grouped, label) {
                 legend: { display: false },
                 datalabels: {
                     color: '#1e293b', anchor: 'end', align: 'right',
-                    font: { size: 10, weight: 'bold', family: 'Orbitron' },
+                    font: { size: 10, weight: 'bold', family: 'Rajdhani' },
                     formatter: (value) => {
                         if (label.includes('%')) return value.toFixed(2) + '%';
                         return formatNum(Math.round(value));
@@ -545,6 +570,21 @@ function groupBy(data, key, sumKey) {
         if (!k || k === '' || k === null) return acc;
         acc[k] = (acc[k] || 0) + (d[sumKey] || 0); return acc;
     }, {});
+}
+
+function groupByCPA(data, key) {
+    const gastos = {}, regs = {};
+    data.forEach(d => {
+        const k = d[key];
+        if (!k || k === '' || k === null) return;
+        gastos[k] = (gastos[k] || 0) + (d.GASTO || 0);
+        regs[k]   = (regs[k]   || 0) + (d.REGISTROS || 0);
+    });
+    const result = {};
+    Object.keys(gastos).forEach(k => {
+        if (regs[k] > 0) result[k] = parseFloat((gastos[k] / regs[k]).toFixed(2));
+    });
+    return result;
 }
 
 function groupByAvg(data, key, avgKey) {

@@ -55,23 +55,38 @@
         <div class="filters">
             <div class="filter-group">
                 <label>Plataforma</label>
-                <select id="filterPlataforma"><option value="">Todas</option></select>
+                <div class="multi-select" id="filterPlataforma">
+                    <div class="multi-select-toggle">Todas</div>
+                    <div class="multi-select-dropdown"></div>
+                </div>
             </div>
             <div class="filter-group">
                 <label>Etapa</label>
-                <select id="filterEtapa"><option value="">Todas</option></select>
+                <div class="multi-select" id="filterEtapa">
+                    <div class="multi-select-toggle">Todas</div>
+                    <div class="multi-select-dropdown"></div>
+                </div>
             </div>
             <div class="filter-group">
                 <label>Tipo Compra</label>
-                <select id="filterCompra"><option value="">Todas</option></select>
+                <div class="multi-select" id="filterCompra">
+                    <div class="multi-select-toggle">Todas</div>
+                    <div class="multi-select-dropdown"></div>
+                </div>
             </div>
             <div class="filter-group">
                 <label>Formato</label>
-                <select id="filterFormato"><option value="">Todos</option></select>
+                <div class="multi-select" id="filterFormato">
+                    <div class="multi-select-toggle">Todas</div>
+                    <div class="multi-select-dropdown"></div>
+                </div>
             </div>
             <div class="filter-group">
                 <label>Audiencia</label>
-                <select id="filterAudiencia"><option value="">Todas</option></select>
+                <div class="multi-select" id="filterAudiencia">
+                    <div class="multi-select-toggle">Todas</div>
+                    <div class="multi-select-dropdown"></div>
+                </div>
             </div>
         </div>
         <div class="export-bar">
@@ -139,6 +154,12 @@
         </div>
         <div class="chart-full"><h3>Evolucion Diaria: Registros</h3><div class="chart-container"><canvas id="chartEvoReg"></canvas></div></div>
         <div class="chart-full"><h3>Evolucion Diaria: Registros por Plataforma</h3><div class="chart-container"><canvas id="chartEvoRegPlat"></canvas></div></div>
+        <div class="charts-row">
+            <div class="chart-card"><h3>CPA por Plataforma</h3><div class="chart-container"><canvas id="chartCPAPlataforma"></canvas></div></div>
+            <div class="chart-card"><h3>CPA por Audiencia</h3><div class="chart-container"><canvas id="chartCPAAudiencia"></canvas></div></div>
+        </div>
+        <div class="chart-full"><h3>Evolucion Diaria: CPA</h3><div class="chart-container"><canvas id="chartEvoCPA"></canvas></div></div>
+        <div class="chart-full"><h3>Evolucion Diaria: CPA por Plataforma</h3><div class="chart-container"><canvas id="chartEvoCPAPlat"></canvas></div></div>
 
         <div class="section-title">Alcance y Frecuencia</div>
         <div class="charts-row">
