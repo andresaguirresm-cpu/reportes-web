@@ -184,6 +184,8 @@ function updateAllCharts(data) {
     createDoughnutChart('chartRegAudiencia', groupBy(data, 'AUDIENCIA', 'REGISTROS'));
     createBarChart('chartCPAPlataforma', groupByCPA(data, 'PLATAFORMA'), 'CPA ($)');
     createBarChart('chartCPAAudiencia', groupByCPA(data, 'AUDIENCIA'), 'CPA ($)');
+    createBarChart('chartCVRPlataforma', groupByCVR(data, 'PLATAFORMA'), 'CVR (%)');
+    createBarChart('chartCVRAudiencia', groupByCVR(data, 'AUDIENCIA'), 'CVR (%)');
     createBarChart('chartAlcancePlataforma', groupBy(data, 'PLATAFORMA', 'ALCANCE'), 'Alcance');
     createDoughnutChart('chartAlcanceAudiencia', groupBy(data, 'AUDIENCIA', 'ALCANCE'));
     createBarChart('chartFrecuenciaPlataforma', groupByAvg(data, 'PLATAFORMA', 'FRECUENCIA'), 'Frecuencia');
@@ -239,9 +241,10 @@ function updateAllCharts(data) {
     }
 
     const daily = getDailyData(data);
-    createSingleLineChart('chartEvoGasto', daily, 'gasto', 'Inversion ($)');
+    createSingleLineChart('chartEvoGasto', daily, 'gasto', 'Inversion ($)', true);
     createSingleLineChart('chartEvoReg', daily, 'reg', 'Registros');
-    createSingleLineChart('chartEvoCPA', daily, 'cpa', 'CPA ($)');
+    createSingleLineChart('chartEvoCPA', daily, 'cpa', 'CPA ($)', true);
+    createSingleLineChart('chartEvoCVR', daily, 'cvr', 'CVR (%)');
     createDualLineChart('chartEvoImpresiones', daily, 'imp', 'Impresiones', 'frec', 'Frecuencia', '');
     createDualLineChart('chartEvoClics', daily, 'clics', 'Clics', 'ctr', 'CTR', '%');
     createDualLineChart('chartEvoViews', daily, 'views', 'Video Views', 'vtr', 'VTR', '%');
@@ -250,6 +253,7 @@ function updateAllCharts(data) {
     createPlatformLineChart('chartEvoGastoPlat', dailyByPlat, 'gasto', 'Inversion ($)', true);
     createPlatformLineChart('chartEvoRegPlat', dailyByPlat, 'reg', 'Registros', false);
     createPlatformLineChart('chartEvoCPAPlat', dailyByPlat, 'cpa', 'CPA ($)', true);
+    createPlatformLineChart('chartEvoCVRPlat', dailyByPlat, 'cvr', 'CVR (%)', false);
     createPlatformLineChart('chartEvoImpPlat', dailyByPlat, 'imp', 'Impresiones', false);
     createPlatformLineChart('chartEvoClicsPlat', dailyByPlat, 'clics', 'Clics', false);
     createPlatformLineChart('chartEvoViewsPlat', dailyByPlat, 'views', 'Video Views', false);
@@ -317,6 +321,7 @@ function getDailyData(data) {
         views: daily[day].views,
         reg: daily[day].reg,
         cpa: daily[day].reg > 0 ? parseFloat((daily[day].gasto / daily[day].reg).toFixed(2)) : 0,
+        cvr: daily[day].clics > 0 ? parseFloat((daily[day].reg / daily[day].clics * 100).toFixed(2)) : 0,
         ctr: daily[day].imp > 0 ? (daily[day].clics / daily[day].imp * 100) : 0,
         vtr: daily[day].imp > 0 ? (daily[day].views / daily[day].imp * 100) : 0,
         frec: daily[day].frecCount > 0 ? daily[day].frecSum / daily[day].frecCount : 0
@@ -352,7 +357,8 @@ function getDailyDataByPlatform(data) {
             clics: dailyByPlat[p][day] ? dailyByPlat[p][day].clics : 0,
             views: dailyByPlat[p][day] ? dailyByPlat[p][day].views : 0,
             reg: dailyByPlat[p][day] ? dailyByPlat[p][day].reg : 0,
-            cpa: (dailyByPlat[p][day] && dailyByPlat[p][day].reg > 0) ? parseFloat((dailyByPlat[p][day].gasto / dailyByPlat[p][day].reg).toFixed(2)) : 0
+            cpa: (dailyByPlat[p][day] && dailyByPlat[p][day].reg > 0) ? parseFloat((dailyByPlat[p][day].gasto / dailyByPlat[p][day].reg).toFixed(2)) : 0,
+            cvr: (dailyByPlat[p][day] && dailyByPlat[p][day].clics > 0) ? parseFloat((dailyByPlat[p][day].reg / dailyByPlat[p][day].clics * 100).toFixed(2)) : 0
         }));
     });
     result._labels = allDays.map(d => d.substring(0, 5));
@@ -464,7 +470,7 @@ function createFormatLineChart(canvasId, dailyByFmt, metricKey, metricLabel, isC
     });
 }
 
-function createSingleLineChart(canvasId, dailyData, metricKey, metricLabel) {
+function createSingleLineChart(canvasId, dailyData, metricKey, metricLabel, isCurrency = false) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     if (charts[canvasId]) charts[canvasId].destroy();
     const labels = dailyData.map(d => d.label);
@@ -478,7 +484,7 @@ function createSingleLineChart(canvasId, dailyData, metricKey, metricLabel) {
             plugins: { legend: { labels: { color: '#1e293b', font: { size: 10 }, boxWidth: 12, padding: 15 } }, datalabels: { display: false } },
             scales: {
                 x: { ticks: { color: '#64748b', font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 15 }, grid: { display: false } },
-                y: { ticks: { color: colors.cyan1, font: { size: 9 }, callback: (v) => '$' + formatNum(v.toFixed(0)) }, grid: { color: 'rgba(0, 0, 0, 0.06)' }, title: { display: true, text: metricLabel, color: colors.cyan1, font: { size: 10 } } }
+                y: { ticks: { color: colors.cyan1, font: { size: 9 }, callback: (v) => isCurrency ? '$' + formatNum(v.toFixed(0)) : formatNum(v) }, grid: { color: 'rgba(0, 0, 0, 0.06)' }, title: { display: true, text: metricLabel, color: colors.cyan1, font: { size: 10 } } }
             }
         }
     });
@@ -583,6 +589,21 @@ function groupByCPA(data, key) {
     const result = {};
     Object.keys(gastos).forEach(k => {
         if (regs[k] > 0) result[k] = parseFloat((gastos[k] / regs[k]).toFixed(2));
+    });
+    return result;
+}
+
+function groupByCVR(data, key) {
+    const regs = {}, clics = {};
+    data.forEach(d => {
+        const k = d[key];
+        if (!k || k === '' || k === null) return;
+        regs[k]  = (regs[k]  || 0) + (d.REGISTROS || 0);
+        clics[k] = (clics[k] || 0) + (d.CLICS     || 0);
+    });
+    const result = {};
+    Object.keys(regs).forEach(k => {
+        if (clics[k] > 0) result[k] = parseFloat((regs[k] / clics[k] * 100).toFixed(2));
     });
     return result;
 }
