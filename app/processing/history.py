@@ -102,9 +102,10 @@ def verificar_datos_historicos(df_unified, campaign_id):
     # Check drastic metric drops
     totales_previos = last['totals']
     if totales_previos:
-        totales_actuales = df_unified.groupby('PLATAFORMA').agg({
-            'GASTO': 'sum', 'IMPRESIONES': 'sum'
-        }).to_dict('index')
+        agg_cols = {'GASTO': 'sum', 'IMPRESIONES': 'sum'}
+        if 'VIEWS' in df_unified.columns:
+            agg_cols['VIEWS'] = 'sum'
+        totales_actuales = df_unified.groupby('PLATAFORMA').agg(agg_cols).to_dict('index')
 
         for plat, metricas_prev in totales_previos.items():
             if plat in totales_actuales:
@@ -116,6 +117,15 @@ def verificar_datos_historicos(df_unified, campaign_id):
                         msg = (f"CAIDA DRASTICA EN {plat}: Gasto cayo {abs(variacion):.0f}% "
                                f"(${gasto_prev:,.2f} -> ${gasto_act:,.2f})")
                         alerts.append({'tipo': 'ADVERTENCIA', 'archivo': 'COMPARACION HISTORICA', 'mensaje': msg})
+
+                # Alert if views existed before but are now zero
+                views_prev = metricas_prev.get('VIEWS', 0)
+                views_act = totales_actuales[plat].get('VIEWS', 0)
+                if views_prev > 0 and views_act == 0:
+                    msg = (f"VIEWS DESAPARECIERON EN {plat}: La ejecucion anterior tenia "
+                           f"{views_prev:,.0f} views pero ahora es 0. "
+                           f"Verifique que la columna de views este presente en el archivo.")
+                    alerts.append({'tipo': 'CRITICO', 'archivo': 'COMPARACION HISTORICA', 'mensaje': msg})
 
     return alerts
 
@@ -155,9 +165,10 @@ def save_history(run_id, campaign_id, plataformas, df_unified):
                     }
 
     # Totals per platform
-    totales = df_unified.groupby('PLATAFORMA').agg({
-        'GASTO': 'sum', 'IMPRESIONES': 'sum'
-    }).to_dict('index')
+    agg_cols = {'GASTO': 'sum', 'IMPRESIONES': 'sum'}
+    if 'VIEWS' in df_unified.columns:
+        agg_cols['VIEWS'] = 'sum'
+    totales = df_unified.groupby('PLATAFORMA').agg(agg_cols).to_dict('index')
     totals_data = {k: {m: round(v, 2) for m, v in vals.items()}
                    for k, vals in totales.items()}
 

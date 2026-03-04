@@ -263,6 +263,13 @@ function updateAllCharts(data) {
     createFormatLineChart('chartEvoImpFmt', dailyByFmt, 'imp', 'Impresiones', false);
     createFormatLineChart('chartEvoClicsFmt', dailyByFmt, 'clics', 'Clics', false);
     createFormatLineChart('chartEvoViewsFmt', dailyByFmt, 'views', 'Video Views', false);
+
+    const dailyByCom = getDailyDataByCom(data);
+    createComLineChart('chartEvoGastoCom', dailyByCom, 'gasto', 'Inversion ($)', true);
+    createComLineChart('chartEvoImpCom', dailyByCom, 'imp', 'Impresiones', false);
+    createComLineChart('chartEvoClicsCom', dailyByCom, 'clics', 'Clics', false);
+    createComLineChart('chartEvoViewsCom', dailyByCom, 'views', 'Video Views', false);
+    createComLineChart('chartEvoRegCom', dailyByCom, 'reg', 'Registros', false);
 }
 
 function createBarChart(canvasId, grouped, label, subtitles) {
@@ -398,6 +405,86 @@ function getDailyDataByFormat(data) {
     result._labels = allDays.map(d => d.substring(0, 5));
     result._formats = formats;
     return result;
+}
+
+function getDailyDataByCom(data) {
+    const coms = [...new Set(data.map(d => d.COM))].filter(Boolean).sort();
+    const dailyByCom = {};
+    coms.forEach(c => { dailyByCom[c] = {}; });
+    data.forEach(d => {
+        const day = d.DIA || '';
+        const com = d.COM || '';
+        if (!day || !com) return;
+        if (!dailyByCom[com][day]) dailyByCom[com][day] = { gasto: 0, imp: 0, clics: 0, views: 0, reg: 0 };
+        dailyByCom[com][day].gasto += (d.GASTO || 0);
+        dailyByCom[com][day].imp += (d.IMPRESIONES || 0);
+        dailyByCom[com][day].clics += (d.CLICS || 0);
+        dailyByCom[com][day].views += (d.VIEWS || 0);
+        dailyByCom[com][day].reg += (d.REGISTROS || 0);
+    });
+    const allDays = [...new Set(data.map(d => d.DIA))].filter(Boolean).sort((a, b) => {
+        const [da, ma, ya] = a.split('/').map(Number);
+        const [db, mb, yb] = b.split('/').map(Number);
+        return (ya * 10000 + ma * 100 + da) - (yb * 10000 + mb * 100 + db);
+    });
+    const result = {};
+    coms.forEach(c => {
+        result[c] = allDays.map(day => ({
+            label: day.substring(0, 5),
+            gasto: dailyByCom[c][day] ? parseFloat(dailyByCom[c][day].gasto.toFixed(2)) : 0,
+            imp: dailyByCom[c][day] ? dailyByCom[c][day].imp : 0,
+            clics: dailyByCom[c][day] ? dailyByCom[c][day].clics : 0,
+            views: dailyByCom[c][day] ? dailyByCom[c][day].views : 0,
+            reg: dailyByCom[c][day] ? dailyByCom[c][day].reg : 0
+        }));
+    });
+    result._labels = allDays.map(d => d.substring(0, 5));
+    result._coms = coms;
+    return result;
+}
+
+const comColors = [
+    { border: '#6366f1', bg: 'rgba(99, 102, 241, 0.15)' },
+    { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' },
+    { border: '#10b981', bg: 'rgba(16, 185, 129, 0.15)' },
+    { border: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' },
+    { border: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)' },
+    { border: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)' },
+    { border: '#f97316', bg: 'rgba(249, 115, 22, 0.15)' },
+    { border: '#84cc16', bg: 'rgba(132, 204, 22, 0.15)' }
+];
+
+function createComLineChart(canvasId, dailyByCom, metricKey, metricLabel, isCurrency) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    if (charts[canvasId]) charts[canvasId].destroy();
+    const labels = dailyByCom._labels || [];
+    const coms = dailyByCom._coms || [];
+    const datasets = coms.map((c, idx) => {
+        const cColor = comColors[idx % comColors.length];
+        return {
+            label: c,
+            data: (dailyByCom[c] || []).map(d => d[metricKey]),
+            borderColor: cColor.border, backgroundColor: cColor.bg,
+            borderWidth: 2, pointRadius: 3, pointBackgroundColor: cColor.border,
+            fill: false, tension: 0.3
+        };
+    });
+    charts[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: { labels: labels, datasets: datasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { color: '#1e293b', font: { size: 10 }, boxWidth: 12, padding: 15 } },
+                datalabels: { display: false }
+            },
+            scales: {
+                x: { ticks: { color: '#64748b', font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 15 }, grid: { display: false } },
+                y: { ticks: { color: '#1e293b', font: { size: 9 }, callback: (v) => isCurrency ? '$' + formatNum(v.toFixed(0)) : formatNum(v) }, grid: { color: 'rgba(0, 0, 0, 0.06)' }, title: { display: true, text: metricLabel, color: '#1e293b', font: { size: 10 } } }
+            }
+        }
+    });
 }
 
 function getPlatformColor(platform) {

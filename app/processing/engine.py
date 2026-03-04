@@ -18,6 +18,7 @@ COLUMN_MAPPING = {
     'views': ['thruplays', 'thru plays',
               'visualizaciones de trueview', 'vistas de trueview',
               'trueview views',
+              '6-second focused views',
               '15-second focused views',
               'vistas', 'views', 'video views'],
     'impresiones': ['impresiones', 'impressions', 'impr.', 'imps'],
