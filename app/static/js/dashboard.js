@@ -231,10 +231,16 @@ function updateAllCharts(data) {
     createBarChart('chartEfRegAud',  groupBy(data, 'AUDIENCIA', 'REGISTROS'), 'Registros');
 
     const hasCiudad = data.some(d => d.CIUDAD && d.CIUDAD !== '');
-    document.querySelectorAll('.ciudad-pg-wrap').forEach(el => el.style.display = hasCiudad ? '' : 'none');
+    document.querySelectorAll('.ciudad-pg-wrap, .ciudad-evo-wrap').forEach(el => el.style.display = hasCiudad ? '' : 'none');
     const secCiudad = document.getElementById('sectionCiudad');
     if (secCiudad) secCiudad.style.display = hasCiudad ? '' : 'none';
     if (hasCiudad) {
+        const dailyByCiudad = getDailyDataByCiudad(data);
+        createComLineChart('chartEvoGastoCiudad',  dailyByCiudad, 'gasto',  'Inversion ($)', true);
+        createComLineChart('chartEvoImpCiudad',    dailyByCiudad, 'imp',    'Impresiones', false);
+        createComLineChart('chartEvoClicsCiudad',  dailyByCiudad, 'clics',  'Clics', false);
+        createComLineChart('chartEvoViewsCiudad',  dailyByCiudad, 'views',  'Video Views', false);
+        createComLineChart('chartEvoRegCiudad',    dailyByCiudad, 'reg',    'Registros', false);
         createDoughnutChart('chartPGGastoCiudad',   groupBy(data, 'CIUDAD', 'GASTO'));
         createDoughnutChart('chartPGImpCiudad',     groupBy(data, 'CIUDAD', 'IMPRESIONES'));
         createDoughnutChart('chartPGClicsCiudad',   groupBy(data, 'CIUDAD', 'CLICS'));
@@ -462,6 +468,42 @@ function getDailyDataByCom(data) {
     });
     result._labels = allDays.map(d => d.substring(0, 5));
     result._coms = coms;
+    return result;
+}
+
+function getDailyDataByCiudad(data) {
+    const ciudades = [...new Set(data.map(d => d.CIUDAD))].filter(Boolean).sort();
+    const dailyByCiudad = {};
+    ciudades.forEach(c => { dailyByCiudad[c] = {}; });
+    data.forEach(d => {
+        const day = d.DIA || '';
+        const ciudad = d.CIUDAD || '';
+        if (!day || !ciudad) return;
+        if (!dailyByCiudad[ciudad][day]) dailyByCiudad[ciudad][day] = { gasto: 0, imp: 0, clics: 0, views: 0, reg: 0 };
+        dailyByCiudad[ciudad][day].gasto += (d.GASTO || 0);
+        dailyByCiudad[ciudad][day].imp += (d.IMPRESIONES || 0);
+        dailyByCiudad[ciudad][day].clics += (d.CLICS || 0);
+        dailyByCiudad[ciudad][day].views += (d.VIEWS || 0);
+        dailyByCiudad[ciudad][day].reg += (d.REGISTROS || 0);
+    });
+    const allDays = [...new Set(data.map(d => d.DIA))].filter(Boolean).sort((a, b) => {
+        const [da, ma, ya] = a.split('/').map(Number);
+        const [db, mb, yb] = b.split('/').map(Number);
+        return (ya * 10000 + ma * 100 + da) - (yb * 10000 + mb * 100 + db);
+    });
+    const result = {};
+    ciudades.forEach(c => {
+        result[c] = allDays.map(day => ({
+            label: day.substring(0, 5),
+            gasto: dailyByCiudad[c][day] ? parseFloat(dailyByCiudad[c][day].gasto.toFixed(2)) : 0,
+            imp: dailyByCiudad[c][day] ? dailyByCiudad[c][day].imp : 0,
+            clics: dailyByCiudad[c][day] ? dailyByCiudad[c][day].clics : 0,
+            views: dailyByCiudad[c][day] ? dailyByCiudad[c][day].views : 0,
+            reg: dailyByCiudad[c][day] ? dailyByCiudad[c][day].reg : 0
+        }));
+    });
+    result._labels = allDays.map(d => d.substring(0, 5));
+    result._coms = ciudades;
     return result;
 }
 
