@@ -53,7 +53,8 @@ function init() {
 
 const FILTER_MAP = {
     'filterPlataforma': 'PLATAFORMA', 'filterEtapa': 'ETAPA',
-    'filterCompra': 'COMPRA', 'filterFormato': 'FORMATO', 'filterAudiencia': 'AUDIENCIA'
+    'filterCompra': 'COMPRA', 'filterFormato': 'FORMATO', 'filterAudiencia': 'AUDIENCIA',
+    'filterCiudad': 'CIUDAD'
 };
 
 function populateFilters() {
@@ -228,6 +229,20 @@ function updateAllCharts(data) {
     createBarChart('chartEfRegPlat', groupBy(data, 'PLATAFORMA', 'REGISTROS'), 'Registros');
     createBarChart('chartEfRegFmt',  groupBy(data, 'FORMATO', 'REGISTROS'), 'Registros');
     createBarChart('chartEfRegAud',  groupBy(data, 'AUDIENCIA', 'REGISTROS'), 'Registros');
+
+    const hasCiudad = data.some(d => d.CIUDAD && d.CIUDAD !== '');
+    const secCiudad = document.getElementById('sectionCiudad');
+    if (secCiudad) secCiudad.style.display = hasCiudad ? '' : 'none';
+    if (hasCiudad) {
+        createHorizontalBarChart('chartGastoCiudad',    groupBy(data, 'CIUDAD', 'GASTO'), 'Gasto');
+        createHorizontalBarChart('chartEfCiudadImp',    groupBy(data, 'CIUDAD', 'IMPRESIONES'), 'Impresiones');
+        createHorizontalBarChart('chartEfCiudadClics',  groupBy(data, 'CIUDAD', 'CLICS'), 'Clics');
+        createHorizontalBarChart('chartEfCiudadViews',  groupBy(data, 'CIUDAD', 'VIEWS'), 'Views');
+        createHorizontalBarChart('chartEfCiudadCTR',    groupByAvg(data, 'CIUDAD', 'CTR'), 'CTR %');
+        createHorizontalBarChart('chartEfCiudadVTR',    groupByAvg(data, 'CIUDAD', 'VTR'), 'VTR %');
+        createHorizontalBarChart('chartEfCiudadReg',    groupBy(data, 'CIUDAD', 'REGISTROS'), 'Registros');
+        createHorizontalBarChart('chartEfCiudadCPA',    groupByCPA(data, 'CIUDAD'), 'CPA ($)');
+    }
 
     const hasEstablecimiento = data.some(d => d.ESTABLECIMIENTO && d.ESTABLECIMIENTO !== '');
     const secEst = document.getElementById('sectionEstablecimiento');

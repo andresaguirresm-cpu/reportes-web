@@ -88,6 +88,13 @@
                     <div class="multi-select-dropdown"></div>
                 </div>
             </div>
+            <div class="filter-group">
+                <label>Ciudad</label>
+                <div class="multi-select" id="filterCiudad">
+                    <div class="multi-select-toggle">Todas</div>
+                    <div class="multi-select-dropdown"></div>
+                </div>
+            </div>
         </div>
         <div class="export-bar">
             <button onclick="exportPDF()" class="btn-export">Exportar PDF</button>
@@ -253,6 +260,24 @@
             <div class="chart-card"><h3>Registros por Formato</h3><div class="chart-container"><canvas id="chartEfRegFmt"></canvas></div></div>
             <div class="chart-card"><h3>Registros por Audiencia</h3><div class="chart-container"><canvas id="chartEfRegAud"></canvas></div></div>
         </div>
+        <div id="sectionCiudad" style="display:none">
+            <div class="section-title">Eficiencia por Ciudad</div>
+            <div class="charts-row">
+                <div class="chart-card"><h3>Gasto por Ciudad</h3><div class="chart-container"><canvas id="chartGastoCiudad"></canvas></div></div>
+                <div class="chart-card"><h3>Impresiones por Ciudad</h3><div class="chart-container"><canvas id="chartEfCiudadImp"></canvas></div></div>
+                <div class="chart-card"><h3>Clics por Ciudad</h3><div class="chart-container"><canvas id="chartEfCiudadClics"></canvas></div></div>
+            </div>
+            <div class="charts-row">
+                <div class="chart-card"><h3>Views por Ciudad</h3><div class="chart-container"><canvas id="chartEfCiudadViews"></canvas></div></div>
+                <div class="chart-card"><h3>CTR por Ciudad</h3><div class="chart-container"><canvas id="chartEfCiudadCTR"></canvas></div></div>
+                <div class="chart-card"><h3>VTR por Ciudad</h3><div class="chart-container"><canvas id="chartEfCiudadVTR"></canvas></div></div>
+            </div>
+            <div class="charts-row">
+                <div class="chart-card"><h3>Registros por Ciudad</h3><div class="chart-container"><canvas id="chartEfCiudadReg"></canvas></div></div>
+                <div class="chart-card"><h3>CPA por Ciudad</h3><div class="chart-container"><canvas id="chartEfCiudadCPA"></canvas></div></div>
+            </div>
+        </div>
+
         <div id="sectionEstablecimiento" style="display:none">
             <div class="section-title">Eficiencia por Establecimiento</div>
             <div class="charts-row">

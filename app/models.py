@@ -49,6 +49,7 @@ class ReportRow(db.Model):
     formato = db.Column(db.String(100), default='')
     audiencia = db.Column(db.String(200), default='')
     establecimiento = db.Column(db.String(200), default='')
+    ciudad = db.Column(db.String(200), default='')
     gasto = db.Column(db.Float, default=0)
     alcance = db.Column(db.Float, default=0)
     frecuencia = db.Column(db.Float, default=0)
@@ -72,6 +73,7 @@ class ReportRow(db.Model):
             'FORMATO': self.formato or '',
             'AUDIENCIA': self.audiencia or '',
             'ESTABLECIMIENTO': self.establecimiento or '',
+            'CIUDAD': self.ciudad or '',
             'GASTO': self.gasto or 0,
             'ALCANCE': self.alcance or 0,
             'FRECUENCIA': self.frecuencia or 0,

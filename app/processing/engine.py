@@ -28,13 +28,14 @@ COLUMN_MAPPING = {
     'ad_group': ['nombre del conjunto de anuncios', 'ad set name', 'ad group name',
                  'grupo de anuncios', 'ad set', 'ad group'],
     'establecimiento': ['establecimiento', 'establishment', 'estab'],
+    'ciudad': ['ciudad', 'city', 'location', 'geo', 'region', 'ubicacion', 'localidad'],
     'registros': ['conversiones', 'conversions', 'todas las conv.', 'all conversions',
                   'registro completado', 'registros completados', 'registros completado',
                   'registro completados', 'completed registration', 'registrations']
 }
 
 OUTPUT_COLUMNS = ['MARCA', 'PLATAFORMA', 'CAMPANA', 'AD GROUP', 'ETAPA', 'COMPRA',
-                  'COM', 'FORMATO', 'AUDIENCIA', 'ESTABLECIMIENTO', 'GASTO', 'ALCANCE',
+                  'COM', 'FORMATO', 'AUDIENCIA', 'ESTABLECIMIENTO', 'CIUDAD', 'GASTO', 'ALCANCE',
                   'FRECUENCIA', 'CLICS', 'VIEWS', 'IMPRESIONES', 'REGISTROS', 'CTR', 'VTR', 'DIA']
 
 
@@ -155,7 +156,7 @@ def process_file_from_memory(file_storage, filename):
             break
 
     # Extract nomenclature metadata
-    fields_to_extract = ['MARCA', 'PLATAFORMA', 'ETAPA', 'COMPRA', 'COM', 'FORMATO', 'AUDIENCIA', 'ESTABLECIMIENTO']
+    fields_to_extract = ['MARCA', 'PLATAFORMA', 'ETAPA', 'COMPRA', 'COM', 'FORMATO', 'AUDIENCIA', 'ESTABLECIMIENTO', 'CIUDAD']
     for field in fields_to_extract:
         df[field] = ''
 
@@ -435,6 +436,7 @@ def process_uploaded_files(file_storages, run_id, campaign_id, campaign_filter=N
             formato=str(row.get('FORMATO', '') or ''),
             audiencia=str(row.get('AUDIENCIA', '') or ''),
             establecimiento=str(row.get('ESTABLECIMIENTO', '') or ''),
+            ciudad=str(row.get('CIUDAD', '') or ''),
             gasto=float(row.get('GASTO', 0) or 0),
             alcance=float(row.get('ALCANCE', 0) or 0),
             frecuencia=float(row.get('FRECUENCIA', 0) or 0),

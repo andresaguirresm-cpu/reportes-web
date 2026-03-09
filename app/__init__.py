@@ -59,6 +59,9 @@ def _run_migrations():
     if 'registros' not in existing:
         pending.append("ALTER TABLE report_rows ADD COLUMN registros INTEGER DEFAULT 0")
 
+    if 'ciudad' not in existing:
+        pending.append("ALTER TABLE report_rows ADD COLUMN ciudad VARCHAR(200) DEFAULT ''")
+
     if pending:
         with db.engine.connect() as conn:
             for sql in pending:
