@@ -231,9 +231,16 @@ function updateAllCharts(data) {
     createBarChart('chartEfRegAud',  groupBy(data, 'AUDIENCIA', 'REGISTROS'), 'Registros');
 
     const hasCiudad = data.some(d => d.CIUDAD && d.CIUDAD !== '');
+    document.querySelectorAll('.ciudad-pg-wrap').forEach(el => el.style.display = hasCiudad ? '' : 'none');
     const secCiudad = document.getElementById('sectionCiudad');
     if (secCiudad) secCiudad.style.display = hasCiudad ? '' : 'none';
     if (hasCiudad) {
+        createDoughnutChart('chartPGGastoCiudad',   groupBy(data, 'CIUDAD', 'GASTO'));
+        createDoughnutChart('chartPGImpCiudad',     groupBy(data, 'CIUDAD', 'IMPRESIONES'));
+        createDoughnutChart('chartPGClicsCiudad',   groupBy(data, 'CIUDAD', 'CLICS'));
+        createDoughnutChart('chartPGViewsCiudad',   groupBy(data, 'CIUDAD', 'VIEWS'));
+        createDoughnutChart('chartPGRegCiudad',     groupBy(data, 'CIUDAD', 'REGISTROS'));
+        createDoughnutChart('chartPGAlcanceCiudad', groupBy(data, 'CIUDAD', 'ALCANCE'));
         createHorizontalBarChart('chartGastoCiudad',    groupBy(data, 'CIUDAD', 'GASTO'), 'Gasto');
         createHorizontalBarChart('chartEfCiudadImp',    groupBy(data, 'CIUDAD', 'IMPRESIONES'), 'Impresiones');
         createHorizontalBarChart('chartEfCiudadClics',  groupBy(data, 'CIUDAD', 'CLICS'), 'Clics');
