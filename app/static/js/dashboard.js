@@ -298,6 +298,13 @@ function updateAllCharts(data) {
     createComLineChart('chartEvoClicsCom', dailyByCom, 'clics', 'Clics', false);
     createComLineChart('chartEvoViewsCom', dailyByCom, 'views', 'Video Views', false);
     createComLineChart('chartEvoRegCom', dailyByCom, 'reg', 'Registros', false);
+
+    const dailyByEtapa = getDailyDataByEtapa(data);
+    createComLineChart('chartEvoGastoEtapa', dailyByEtapa, 'gasto', 'Inversion ($)', true);
+    createComLineChart('chartEvoImpEtapa', dailyByEtapa, 'imp', 'Impresiones', false);
+    createComLineChart('chartEvoClicsEtapa', dailyByEtapa, 'clics', 'Clics', false);
+    createComLineChart('chartEvoViewsEtapa', dailyByEtapa, 'views', 'Video Views', false);
+    createComLineChart('chartEvoRegEtapa', dailyByEtapa, 'reg', 'Registros', false);
 }
 
 function createBarChart(canvasId, grouped, label, subtitles) {
@@ -468,6 +475,42 @@ function getDailyDataByCom(data) {
     });
     result._labels = allDays.map(d => d.substring(0, 5));
     result._coms = coms;
+    return result;
+}
+
+function getDailyDataByEtapa(data) {
+    const etapas = [...new Set(data.map(d => d.ETAPA))].filter(Boolean).sort();
+    const dailyByEtapa = {};
+    etapas.forEach(e => { dailyByEtapa[e] = {}; });
+    data.forEach(d => {
+        const day = d.DIA || '';
+        const etapa = d.ETAPA || '';
+        if (!day || !etapa) return;
+        if (!dailyByEtapa[etapa][day]) dailyByEtapa[etapa][day] = { gasto: 0, imp: 0, clics: 0, views: 0, reg: 0 };
+        dailyByEtapa[etapa][day].gasto += (d.GASTO || 0);
+        dailyByEtapa[etapa][day].imp += (d.IMPRESIONES || 0);
+        dailyByEtapa[etapa][day].clics += (d.CLICS || 0);
+        dailyByEtapa[etapa][day].views += (d.VIEWS || 0);
+        dailyByEtapa[etapa][day].reg += (d.REGISTROS || 0);
+    });
+    const allDays = [...new Set(data.map(d => d.DIA))].filter(Boolean).sort((a, b) => {
+        const [da, ma, ya] = a.split('/').map(Number);
+        const [db, mb, yb] = b.split('/').map(Number);
+        return (ya * 10000 + ma * 100 + da) - (yb * 10000 + mb * 100 + db);
+    });
+    const result = {};
+    etapas.forEach(e => {
+        result[e] = allDays.map(day => ({
+            label: day.substring(0, 5),
+            gasto: dailyByEtapa[e][day] ? parseFloat(dailyByEtapa[e][day].gasto.toFixed(2)) : 0,
+            imp: dailyByEtapa[e][day] ? dailyByEtapa[e][day].imp : 0,
+            clics: dailyByEtapa[e][day] ? dailyByEtapa[e][day].clics : 0,
+            views: dailyByEtapa[e][day] ? dailyByEtapa[e][day].views : 0,
+            reg: dailyByEtapa[e][day] ? dailyByEtapa[e][day].reg : 0
+        }));
+    });
+    result._labels = allDays.map(d => d.substring(0, 5));
+    result._coms = etapas;
     return result;
 }
 
