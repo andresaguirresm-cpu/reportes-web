@@ -5,6 +5,10 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB max upload
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,   # re-verify connections before use
+        'pool_recycle': 280,     # recycle connections every ~4.5 min (Render drops idle after 5 min)
+    }
 
     @staticmethod
     def init_app(app):

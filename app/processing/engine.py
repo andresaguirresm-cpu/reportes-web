@@ -477,8 +477,12 @@ def process_uploaded_files(file_storages, run_id, campaign_id, campaign_filter=N
 
     db.session.commit()
 
-    # Save history
-    save_history(run_id, campaign_id, platforms_found, df_unified)
+    # Save history (non-critical — don't let failures break the result)
+    try:
+        save_history(run_id, campaign_id, platforms_found, df_unified)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("save_history failed (non-fatal): %s", e)
 
     return {
         'run_id': run_id,

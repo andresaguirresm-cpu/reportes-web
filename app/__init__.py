@@ -1,8 +1,10 @@
 import os
+import logging
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
+logger = logging.getLogger(__name__)
 
 
 def create_app(config_name=None):
@@ -35,12 +37,19 @@ def create_app(config_name=None):
 
     with app.app_context():
         from app import models  # noqa: F401
+        # Ensure instance directory exists (needed for SQLite fallback)
+        os.makedirs(app.instance_path, exist_ok=True)
         try:
             db.create_all()
+            logger.info("DB tables created/verified OK. URI: %s",
+                        app.config.get('SQLALCHEMY_DATABASE_URI', '')[:40])
+        except Exception as e:
+            logger.error("CRITICAL: db.create_all() failed: %s", e, exc_info=True)
+            raise
+        try:
             _run_migrations()
         except Exception as e:
-            import logging
-            logging.getLogger(__name__).error(f"DB init failed: {e}")
+            logger.warning("Migration warning (non-fatal): %s", e)
 
     return app
 
