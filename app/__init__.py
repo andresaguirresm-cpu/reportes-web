@@ -21,7 +21,11 @@ def create_app(config_name=None):
     app.config.from_object(config.get(config_name, config['default']))
     config.get(config_name, config['default']).init_app(app)
 
-    db.init_app(app)
+    # Test PostgreSQL before db.init_app() so we only initialize once
+    os.makedirs(app.instance_path, exist_ok=True)
+    _ensure_reachable_db(app)
+
+    db.init_app(app)  # called exactly once, with the final URI
 
     from app.routes.main import main_bp
     from app.routes.upload import upload_bp
@@ -37,30 +41,34 @@ def create_app(config_name=None):
 
     with app.app_context():
         from app import models  # noqa: F401
-        os.makedirs(app.instance_path, exist_ok=True)
-        _init_db(app)
+        db.create_all()
+        logger.info("DB init OK — %s", app.config.get('SQLALCHEMY_DATABASE_URI', '')[:60])
+        try:
+            _run_migrations()
+        except Exception as e:
+            logger.warning("Migration warning (non-fatal): %s", e)
 
     return app
 
 
-def _init_db(app):
-    """Initialize DB tables. If the primary DB is unreachable, fall back to SQLite."""
-    sqlite_uri = 'sqlite:///' + os.path.join(app.instance_path, 'reportes.db')
+def _ensure_reachable_db(app):
+    """If the configured DB is unreachable, switch to SQLite before init."""
+    uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+    if not uri or uri.startswith('sqlite'):
+        return  # already SQLite or empty — nothing to test
 
     try:
-        db.create_all()
-        logger.info("DB init OK — %s", app.config.get('SQLALCHEMY_DATABASE_URI', '')[:60])
-    except Exception as primary_err:
-        logger.error("Primary DB unreachable (%s). Switching to SQLite.", primary_err)
-        app.config['SQLALCHEMY_DATABASE_URI'] = sqlite_uri
-        db.init_app(app)   # re-init SQLAlchemy with SQLite URI
-        db.create_all()
-        logger.warning("Running on SQLite fallback — data will not persist across restarts")
-
-    try:
-        _run_migrations()
+        import sqlalchemy as sa
+        engine = sa.create_engine(uri, pool_pre_ping=True)
+        with engine.connect():
+            pass
+        engine.dispose()
+        logger.info("PostgreSQL reachable — using configured DB")
     except Exception as e:
-        logger.warning("Migration warning (non-fatal): %s", e)
+        sqlite_uri = 'sqlite:///' + os.path.join(app.instance_path, 'reportes.db')
+        logger.error("PostgreSQL unreachable: %s — falling back to SQLite", e)
+        logger.warning("SQLite fallback active — data will NOT persist across restarts")
+        app.config['SQLALCHEMY_DATABASE_URI'] = sqlite_uri
 
 
 def _run_migrations():
