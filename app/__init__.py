@@ -35,8 +35,12 @@ def create_app(config_name=None):
 
     with app.app_context():
         from app import models  # noqa: F401
-        db.create_all()
-        _run_migrations()
+        try:
+            db.create_all()
+            _run_migrations()
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"DB init failed: {e}")
 
     return app
 
