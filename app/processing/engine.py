@@ -422,8 +422,9 @@ def process_uploaded_files(file_storages, run_id, campaign_id, campaign_filter=N
     # Extract campaign info
     info_campana = extract_campaign_info(df_unified)
 
-    # Save report rows to database
-    for _, row in df_unified.iterrows():
+    # Save report rows to database in batches to avoid accumulating all objects in RAM
+    BATCH_SIZE = 500
+    for i, (_, row) in enumerate(df_unified.iterrows()):
         report_row = ReportRow(
             run_id=run_id,
             marca=str(row.get('MARCA', '') or ''),
@@ -449,6 +450,9 @@ def process_uploaded_files(file_storages, run_id, campaign_id, campaign_filter=N
             dia=str(row.get('DIA', '') or ''),
         )
         db.session.add(report_row)
+        if (i + 1) % BATCH_SIZE == 0:
+            db.session.flush()
+            db.session.expire_all()
 
     # Save alerts to database
     for alert_data in all_alerts:

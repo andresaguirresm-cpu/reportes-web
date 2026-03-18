@@ -2,7 +2,7 @@ import io
 from flask import Blueprint, send_file, abort
 from app.models import ProcessingRun, ReportRow, Alert
 from app.processing.engine import OUTPUT_COLUMNS
-import pandas as pd
+from openpyxl import Workbook
 
 download_bp = Blueprint('download', __name__)
 
@@ -13,21 +13,21 @@ def download_excel(run_id):
     if run.status != 'completed':
         abort(404)
 
-    rows = ReportRow.query.filter_by(run_id=run_id).all()
-    if not rows:
+    query = ReportRow.query.filter_by(run_id=run_id)
+    if not query.first():
         abort(404)
 
-    data = [row.to_dict() for row in rows]
-    df = pd.DataFrame(data)
+    # Write-only workbook streams rows without holding the full dataset in RAM
+    wb = Workbook(write_only=True)
+    ws = wb.create_sheet()
+    ws.append(OUTPUT_COLUMNS)
 
-    # Ensure column order
-    for col in OUTPUT_COLUMNS:
-        if col not in df.columns:
-            df[col] = ''
-    df = df[OUTPUT_COLUMNS]
+    for row in query.yield_per(500):
+        d = row.to_dict()
+        ws.append([d.get(col, '') for col in OUTPUT_COLUMNS])
 
     output = io.BytesIO()
-    df.to_excel(output, index=False, engine='openpyxl')
+    wb.save(output)
     output.seek(0)
 
     from app.models import Campaign

@@ -10,8 +10,7 @@ def run_data(run_id):
     if run.status != 'completed':
         abort(404)
 
-    rows = ReportRow.query.filter_by(run_id=run_id).all()
-    data = [row.to_dict() for row in rows]
+    data = [row.to_dict() for row in ReportRow.query.filter_by(run_id=run_id).yield_per(500)]
     return jsonify(data)
 
 
