@@ -82,14 +82,22 @@ def map_columns(df, filename, platform):
     return df, has_critical, alerts
 
 
-def process_file_from_memory(file_storage, filename):
-    """Process an uploaded file (from memory). Returns (df_output, platform, alerts)."""
+def process_file_from_memory(file_source, filename):
+    """Process an uploaded file. Returns (df_output, platform, alerts).
+
+    file_source: file path string, bytes, or file-like object with .read()
+    """
     alerts = []
     ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
     is_csv = ext == 'csv'
 
-    file_bytes = file_storage.read()
-    file_storage.seek(0)
+    if isinstance(file_source, str):
+        with open(file_source, 'rb') as f:
+            file_bytes = f.read()
+    elif isinstance(file_source, (bytes, bytearray)):
+        file_bytes = file_source
+    else:
+        file_bytes = file_source.read()
 
     if is_csv:
         # Detect encoding
@@ -382,15 +390,8 @@ def process_uploaded_files(file_storages, run_id, campaign_id, campaign_filter=N
         uploaded = UploadedFile.query.filter_by(run_id=run_id, filename=filename).first()
 
         try:
-            # Open lazily if a path string was passed
-            if isinstance(item, str):
-                with open(item, 'rb') as f:
-                    file_storage = io.BytesIO(f.read())
-            else:
-                file_storage = item
-
-            df, platform, file_alerts = process_file_from_memory(file_storage, filename)
-            del file_storage
+            # Pass path or file-like object directly — no intermediate BytesIO copy
+            df, platform, file_alerts = process_file_from_memory(item, filename)
 
             # Filter by campaign display name if specified
             if campaign_filter and 'CAMPANA' in df.columns:
