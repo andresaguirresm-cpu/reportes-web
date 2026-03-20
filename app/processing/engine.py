@@ -1,5 +1,6 @@
 """Main processing engine: file loading, column mapping, data processing."""
 
+import gc
 import io
 import re
 import pandas as pd
@@ -126,16 +127,20 @@ def process_file_from_memory(file_storage, filename):
         except Exception as e:
             alerts.append({'tipo': 'ERROR', 'archivo': filename, 'mensaje': f"No se pudo leer CSV: {e}"})
             raise
+        finally:
+            del file_bytes
     else:
         # Excel
         try:
             df_raw = pd.read_excel(io.BytesIO(file_bytes), header=None, nrows=10)
         except Exception as e:
+            del file_bytes
             alerts.append({'tipo': 'ERROR', 'archivo': filename, 'mensaje': f"No se pudo leer el archivo: {e}"})
             raise
 
         skiprows = detect_header_row(df_raw)
         df = pd.read_excel(io.BytesIO(file_bytes), skiprows=skiprows)
+        del file_bytes
 
     # Detect platform BEFORE normalizing columns
     platform = detect_platform(df)
@@ -347,8 +352,11 @@ def scan_campaigns_from_files(file_paths):
 def process_uploaded_files(file_storages, run_id, campaign_id, campaign_filter=None):
     """Process multiple uploaded files and save results to database.
 
+    Files are processed one at a time and rows are saved to DB immediately,
+    avoiding accumulation of all DataFrames in memory simultaneously.
+
     Args:
-        file_storages: list of (file_storage, filename) tuples
+        file_storages: list of (file_path_or_storage, filename) tuples
         run_id: ProcessingRun.id
         campaign_id: Campaign.id
 
@@ -358,16 +366,31 @@ def process_uploaded_files(file_storages, run_id, campaign_id, campaign_filter=N
     from app import db
     from app.models import ProcessingRun, ReportRow, Alert, UploadedFile
 
+    BATCH_SIZE = 500
+
     run = ProcessingRun.query.get(run_id)
-    all_data = []
     all_alerts = []
     platforms_found = []
+    total_rows = 0
+    first_campaign_info = None
 
-    for file_storage, filename in file_storages:
+    # agg_stats: lightweight per-platform aggregation used for historical checks
+    # {platform: {formats, fecha_min, fecha_max, gasto, impresiones, views}}
+    agg_stats = {}
+
+    for item, filename in file_storages:
         uploaded = UploadedFile.query.filter_by(run_id=run_id, filename=filename).first()
 
         try:
+            # Open lazily if a path string was passed
+            if isinstance(item, str):
+                with open(item, 'rb') as f:
+                    file_storage = io.BytesIO(f.read())
+            else:
+                file_storage = item
+
             df, platform, file_alerts = process_file_from_memory(file_storage, filename)
+            del file_storage
 
             # Filter by campaign display name if specified
             if campaign_filter and 'CAMPANA' in df.columns:
@@ -381,78 +404,105 @@ def process_uploaded_files(file_storages, run_id, campaign_id, campaign_filter=N
                         uploaded.platform_detected = platform
                         uploaded.rows_processed = 0
                         uploaded.status = 'processed'
+                    del df
                     continue
 
-            all_data.append(df)
             all_alerts.extend(file_alerts)
             platforms_found.append(platform)
 
+            # Per-file empty field validation
+            empty_alerts = verificar_campos_vacios(df)
+            all_alerts.extend(empty_alerts)
+
+            # Extract campaign info from the first file that has it
+            if first_campaign_info is None:
+                first_campaign_info = extract_campaign_info(df)
+
+            # Collect lightweight aggregated stats for historical checks
+            if platform not in agg_stats:
+                agg_stats[platform] = {
+                    'formats': set(), 'fecha_min': None, 'fecha_max': None,
+                    'gasto': 0.0, 'impresiones': 0.0, 'views': 0.0,
+                }
+            stats = agg_stats[platform]
+            if 'FORMATO' in df.columns:
+                stats['formats'].update(f for f in df['FORMATO'].dropna().unique() if f)
+            if 'GASTO' in df.columns:
+                stats['gasto'] += float(pd.to_numeric(df['GASTO'], errors='coerce').fillna(0).sum())
+            if 'IMPRESIONES' in df.columns:
+                stats['impresiones'] += float(pd.to_numeric(df['IMPRESIONES'], errors='coerce').fillna(0).sum())
+            if 'VIEWS' in df.columns:
+                stats['views'] += float(pd.to_numeric(df['VIEWS'], errors='coerce').fillna(0).sum())
+            if 'DIA' in df.columns:
+                dates = pd.to_datetime(df['DIA'], format='%d/%m/%y', errors='coerce').dropna()
+                if not dates.empty:
+                    d_min, d_max = dates.min(), dates.max()
+                    stats['fecha_min'] = d_min if stats['fecha_min'] is None else min(stats['fecha_min'], d_min)
+                    stats['fecha_max'] = d_max if stats['fecha_max'] is None else max(stats['fecha_max'], d_max)
+
+            # Save rows to DB immediately — no accumulation in memory
+            rows_saved = 0
+            for i, (_, row) in enumerate(df.iterrows()):
+                report_row = ReportRow(
+                    run_id=run_id,
+                    marca=str(row.get('MARCA', '') or ''),
+                    plataforma=str(row.get('PLATAFORMA', '') or ''),
+                    campana=str(row.get('CAMPANA', '') or ''),
+                    ad_group=str(row.get('AD GROUP', '') or ''),
+                    etapa=str(row.get('ETAPA', '') or ''),
+                    compra=str(row.get('COMPRA', '') or ''),
+                    com=str(row.get('COM', '') or ''),
+                    formato=str(row.get('FORMATO', '') or ''),
+                    audiencia=str(row.get('AUDIENCIA', '') or ''),
+                    establecimiento=str(row.get('ESTABLECIMIENTO', '') or ''),
+                    ciudad=str(row.get('CIUDAD', '') or ''),
+                    gasto=float(row.get('GASTO', 0) or 0),
+                    alcance=float(row.get('ALCANCE', 0) or 0),
+                    frecuencia=float(row.get('FRECUENCIA', 0) or 0),
+                    clics=float(row.get('CLICS', 0) or 0),
+                    views=float(row.get('VIEWS', 0) or 0),
+                    impresiones=float(row.get('IMPRESIONES', 0) or 0),
+                    registros=int(row.get('REGISTROS', 0) or 0),
+                    ctr=float(row.get('CTR', 0) or 0),
+                    vtr=float(row.get('VTR', 0) or 0),
+                    dia=str(row.get('DIA', '') or ''),
+                )
+                db.session.add(report_row)
+                rows_saved += 1
+                if rows_saved % BATCH_SIZE == 0:
+                    db.session.flush()
+                    db.session.expire_all()
+
+            db.session.flush()
+            db.session.expire_all()
+            total_rows += rows_saved
+
             if uploaded:
                 uploaded.platform_detected = platform
-                uploaded.rows_processed = len(df)
+                uploaded.rows_processed = rows_saved
                 uploaded.status = 'processed'
+
+            # Free DataFrame memory before processing next file
+            del df
+            gc.collect()
+
         except Exception as e:
             all_alerts.append({'tipo': 'ERROR', 'archivo': filename, 'mensaje': str(e)})
             if uploaded:
                 uploaded.status = 'error'
                 uploaded.error_message = str(e)
 
-    if not all_data:
+    if total_rows == 0:
         run.status = 'error'
         db.session.commit()
         return {'error': 'No se pudo procesar ningun archivo'}
 
-    # Unify all dataframes
-    df_unified = pd.concat(all_data, ignore_index=True)
-
-    # Historical comparisons
+    # Historical comparisons using lightweight aggregated stats (no full DataFrame needed)
     hist_alerts = verificar_plataformas_faltantes(platforms_found, campaign_id)
     all_alerts.extend(hist_alerts)
 
-    hist_data_alerts = verificar_datos_historicos(df_unified, campaign_id)
+    hist_data_alerts = verificar_datos_historicos(agg_stats, campaign_id)
     all_alerts.extend(hist_data_alerts)
-
-    # Validate empty fields
-    empty_alerts = verificar_campos_vacios(df_unified)
-    all_alerts.extend(empty_alerts)
-
-    # Calculate deduplicated reach
-    alcance_dedup = calcular_alcance_deduplicado(df_unified, overlap_pct=72)
-
-    # Extract campaign info
-    info_campana = extract_campaign_info(df_unified)
-
-    # Save report rows to database in batches to avoid accumulating all objects in RAM
-    BATCH_SIZE = 500
-    for i, (_, row) in enumerate(df_unified.iterrows()):
-        report_row = ReportRow(
-            run_id=run_id,
-            marca=str(row.get('MARCA', '') or ''),
-            plataforma=str(row.get('PLATAFORMA', '') or ''),
-            campana=str(row.get('CAMPANA', '') or ''),
-            ad_group=str(row.get('AD GROUP', '') or ''),
-            etapa=str(row.get('ETAPA', '') or ''),
-            compra=str(row.get('COMPRA', '') or ''),
-            com=str(row.get('COM', '') or ''),
-            formato=str(row.get('FORMATO', '') or ''),
-            audiencia=str(row.get('AUDIENCIA', '') or ''),
-            establecimiento=str(row.get('ESTABLECIMIENTO', '') or ''),
-            ciudad=str(row.get('CIUDAD', '') or ''),
-            gasto=float(row.get('GASTO', 0) or 0),
-            alcance=float(row.get('ALCANCE', 0) or 0),
-            frecuencia=float(row.get('FRECUENCIA', 0) or 0),
-            clics=float(row.get('CLICS', 0) or 0),
-            views=float(row.get('VIEWS', 0) or 0),
-            impresiones=float(row.get('IMPRESIONES', 0) or 0),
-            registros=int(row.get('REGISTROS', 0) or 0),
-            ctr=float(row.get('CTR', 0) or 0),
-            vtr=float(row.get('VTR', 0) or 0),
-            dia=str(row.get('DIA', '') or ''),
-        )
-        db.session.add(report_row)
-        if (i + 1) % BATCH_SIZE == 0:
-            db.session.flush()
-            db.session.expire_all()
 
     # Save alerts to database
     for alert_data in all_alerts:
@@ -467,33 +517,31 @@ def process_uploaded_files(file_storages, run_id, campaign_id, campaign_filter=N
     # Update run metadata
     run.status = 'completed'
     run.total_files = len(file_storages)
-    run.total_rows = len(df_unified)
+    run.total_rows = total_rows
     run.platforms = ','.join(sorted(set(platforms_found)))
 
     # Update campaign info
     from app.models import Campaign
     campaign = Campaign.query.get(campaign_id)
-    if campaign and info_campana:
-        if info_campana.get('marca'):
-            campaign.brand = info_campana['marca']
-        if info_campana.get('marca_display'):
-            campaign.brand_display = info_campana['marca_display']
+    if campaign and first_campaign_info:
+        if first_campaign_info.get('marca'):
+            campaign.brand = first_campaign_info['marca']
+        if first_campaign_info.get('marca_display'):
+            campaign.brand_display = first_campaign_info['marca_display']
 
     db.session.commit()
 
     # Save history (non-critical — don't let failures break the result)
     try:
-        save_history(run_id, campaign_id, platforms_found, df_unified)
+        save_history(run_id, campaign_id, platforms_found, agg_stats)
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning("save_history failed (non-fatal): %s", e)
 
     return {
         'run_id': run_id,
-        'total_rows': len(df_unified),
+        'total_rows': total_rows,
         'total_files': len(file_storages),
         'platforms': list(set(platforms_found)),
         'alerts_count': len(all_alerts),
-        'alcance_dedup': alcance_dedup,
-        'info_campana': info_campana,
     }

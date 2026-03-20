@@ -48,8 +48,11 @@ def verificar_plataformas_faltantes(plataformas_actuales, campaign_id):
     return alerts
 
 
-def verificar_datos_historicos(df_unified, campaign_id):
-    """Check for missing formats and date range changes. Returns alerts."""
+def verificar_datos_historicos(agg_stats, campaign_id):
+    """Check for missing formats and date range changes. Returns alerts.
+
+    agg_stats: {platform: {formats: set, fecha_min, fecha_max, gasto, impresiones, views}}
+    """
     alerts = []
     last = get_last_history(campaign_id)
     if not last:
@@ -58,38 +61,25 @@ def verificar_datos_historicos(df_unified, campaign_id):
     # Check missing formats per platform
     formatos_previos = last['formats']
     if formatos_previos:
-        formatos_actuales = {}
-        for plat in df_unified['PLATAFORMA'].unique():
-            if plat and str(plat).strip():
-                formatos = df_unified[df_unified['PLATAFORMA'] == plat]['FORMATO'].dropna().unique()
-                formatos = [f for f in formatos if f and str(f).strip()]
-                if formatos:
-                    formatos_actuales[plat] = set(formatos)
-
         for plat, formatos_prev in formatos_previos.items():
             formatos_prev_set = set(formatos_prev)
-            formatos_act_set = formatos_actuales.get(plat, set())
+            formatos_act_set = agg_stats.get(plat, {}).get('formats', set())
             for fmt in formatos_prev_set - formatos_act_set:
                 msg = f"FORMATO FALTANTE: {fmt} de {plat} estaba en ejecucion anterior pero no aparece hoy"
                 alerts.append({'tipo': 'CRITICO', 'archivo': 'COMPARACION HISTORICA', 'mensaje': msg})
 
     # Check date range changes per platform
     fechas_previas = last['dates']
-    if fechas_previas and 'DIA' in df_unified.columns:
+    if fechas_previas:
         for plat, fechas_prev in fechas_previas.items():
             fecha_min_prev = fechas_prev.get('fecha_min')
             if not fecha_min_prev:
                 continue
 
-            df_plat = df_unified[df_unified['PLATAFORMA'] == plat]
-            if df_plat.empty:
+            fecha_min_actual = agg_stats.get(plat, {}).get('fecha_min')
+            if fecha_min_actual is None:
                 continue
 
-            fechas_plat = pd.to_datetime(df_plat['DIA'], format='%d/%m/%y', errors='coerce').dropna()
-            if fechas_plat.empty:
-                continue
-
-            fecha_min_actual = fechas_plat.min()
             fecha_min_prev_dt = pd.to_datetime(fecha_min_prev)
             dias_diferencia = (fecha_min_actual - fecha_min_prev_dt).days
 
@@ -102,15 +92,10 @@ def verificar_datos_historicos(df_unified, campaign_id):
     # Check drastic metric drops
     totales_previos = last['totals']
     if totales_previos:
-        agg_cols = {'GASTO': 'sum', 'IMPRESIONES': 'sum'}
-        if 'VIEWS' in df_unified.columns:
-            agg_cols['VIEWS'] = 'sum'
-        totales_actuales = df_unified.groupby('PLATAFORMA').agg(agg_cols).to_dict('index')
-
         for plat, metricas_prev in totales_previos.items():
-            if plat in totales_actuales:
+            if plat in agg_stats:
                 gasto_prev = metricas_prev.get('GASTO', 0)
-                gasto_act = totales_actuales[plat].get('GASTO', 0)
+                gasto_act = agg_stats[plat].get('gasto', 0)
                 if gasto_prev > 0:
                     variacion = ((gasto_act - gasto_prev) / gasto_prev) * 100
                     if variacion < -50:
@@ -118,9 +103,8 @@ def verificar_datos_historicos(df_unified, campaign_id):
                                f"(${gasto_prev:,.2f} -> ${gasto_act:,.2f})")
                         alerts.append({'tipo': 'ADVERTENCIA', 'archivo': 'COMPARACION HISTORICA', 'mensaje': msg})
 
-                # Alert if views existed before but are now zero
                 views_prev = metricas_prev.get('VIEWS', 0)
-                views_act = totales_actuales[plat].get('VIEWS', 0)
+                views_act = agg_stats[plat].get('views', 0)
                 if views_prev > 0 and views_act == 0:
                     msg = (f"VIEWS DESAPARECIERON EN {plat}: La ejecucion anterior tenia "
                            f"{views_prev:,.0f} views pero ahora es 0. "
@@ -130,47 +114,45 @@ def verificar_datos_historicos(df_unified, campaign_id):
     return alerts
 
 
-def save_history(run_id, campaign_id, plataformas, df_unified):
-    """Save processing history to database."""
+def save_history(run_id, campaign_id, plataformas, agg_stats):
+    """Save processing history to database.
+
+    agg_stats: {platform: {formats: set, fecha_min, fecha_max, gasto, impresiones, views}}
+    """
     from app import db
 
-    # per_campaign=True marks this record as coming from the per-campaign filtered
-    # flow. Records without this flag (old combined-upload runs) are ignored by
-    # get_last_history to prevent cross-campaign false comparisons.
     platforms_data = {
         'plataformas': list(plataformas),
         'per_campaign': True,
     }
 
     # Formats per platform
-    formatos = {}
-    for plat in df_unified['PLATAFORMA'].unique():
-        if plat and str(plat).strip():
-            fmts = df_unified[df_unified['PLATAFORMA'] == plat]['FORMATO'].dropna().unique()
-            fmts = [f for f in fmts if f and str(f).strip()]
-            if fmts:
-                formatos[plat] = sorted(fmts)
+    formatos = {
+        plat: sorted(data['formats'])
+        for plat, data in agg_stats.items()
+        if plat and str(plat).strip() and data.get('formats')
+    }
 
     # Date ranges per platform
     dates_data = {}
-    if 'DIA' in df_unified.columns:
-        for plat in df_unified['PLATAFORMA'].unique():
-            if plat and str(plat).strip():
-                df_plat = df_unified[df_unified['PLATAFORMA'] == plat]
-                fechas = pd.to_datetime(df_plat['DIA'], format='%d/%m/%y', errors='coerce').dropna()
-                if not fechas.empty:
-                    dates_data[plat] = {
-                        'fecha_min': fechas.min().strftime('%Y-%m-%d'),
-                        'fecha_max': fechas.max().strftime('%Y-%m-%d')
-                    }
+    for plat, data in agg_stats.items():
+        if plat and str(plat).strip() and data.get('fecha_min'):
+            dates_data[plat] = {
+                'fecha_min': data['fecha_min'].strftime('%Y-%m-%d'),
+                'fecha_max': data['fecha_max'].strftime('%Y-%m-%d') if data.get('fecha_max') else data['fecha_min'].strftime('%Y-%m-%d'),
+            }
 
     # Totals per platform
-    agg_cols = {'GASTO': 'sum', 'IMPRESIONES': 'sum'}
-    if 'VIEWS' in df_unified.columns:
-        agg_cols['VIEWS'] = 'sum'
-    totales = df_unified.groupby('PLATAFORMA').agg(agg_cols).to_dict('index')
-    totals_data = {k: {m: round(v, 2) for m, v in vals.items()}
-                   for k, vals in totales.items()}
+    totals_data = {}
+    for plat, data in agg_stats.items():
+        if plat and str(plat).strip():
+            entry = {
+                'GASTO': round(data.get('gasto', 0), 2),
+                'IMPRESIONES': round(data.get('impresiones', 0), 2),
+            }
+            if data.get('views', 0) > 0:
+                entry['VIEWS'] = round(data['views'], 2)
+            totals_data[plat] = entry
 
     history = RunHistory(
         run_id=run_id,

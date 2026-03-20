@@ -183,13 +183,8 @@ def _process_session_files(session_dir, saved_paths, campaign_name, campaign_fil
     Returns dict with 'run_id' on success or 'error' on failure.
     Removes session_dir on success.
     """
-    # Build in-memory file storage list
-    file_storages = []
-    for path in saved_paths:
-        filename = os.path.basename(path)
-        with open(path, 'rb') as f:
-            file_bytes = f.read()
-        file_storages.append((io.BytesIO(file_bytes), filename))
+    # Pass file paths — process_uploaded_files opens them lazily one at a time
+    file_storages = [(path, os.path.basename(path)) for path in saved_paths]
 
     if not file_storages:
         return {'error': 'No se encontraron archivos para procesar'}

@@ -59,7 +59,11 @@ def _ensure_reachable_db(app):
 
     try:
         import sqlalchemy as sa
-        engine = sa.create_engine(uri, pool_pre_ping=True)
+        engine = sa.create_engine(
+            uri,
+            pool_pre_ping=True,
+            connect_args={'connect_timeout': 5},  # fail fast if DB unreachable
+        )
         with engine.connect():
             pass
         engine.dispose()
