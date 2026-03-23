@@ -2,8 +2,20 @@
 
 import gc
 import io
+import math
 import re
 import pandas as pd
+
+
+def _sf(v):
+    """Safe float — returns 0.0 for NaN, Inf, None, or non-numeric."""
+    try:
+        f = float(v) if v is not None else 0.0
+        return 0.0 if math.isnan(f) or math.isinf(f) else f
+    except (TypeError, ValueError):
+        return 0.0
+
+
 from .nomenclature import normalize, detect_platform, parse_nomenclature, detect_campaign_from_file, extract_campaign_info
 from .alerts import verificar_columnas_criticas, verificar_campos_vacios
 from .metrics import calcular_alcance_deduplicado
@@ -457,15 +469,15 @@ def process_uploaded_files(file_storages, run_id, campaign_id, campaign_filter=N
                     audiencia=str(row.get('AUDIENCIA', '') or ''),
                     establecimiento=str(row.get('ESTABLECIMIENTO', '') or ''),
                     ciudad=str(row.get('CIUDAD', '') or ''),
-                    gasto=float(row.get('GASTO', 0) or 0),
-                    alcance=float(row.get('ALCANCE', 0) or 0),
-                    frecuencia=float(row.get('FRECUENCIA', 0) or 0),
-                    clics=float(row.get('CLICS', 0) or 0),
-                    views=float(row.get('VIEWS', 0) or 0),
-                    impresiones=float(row.get('IMPRESIONES', 0) or 0),
-                    registros=int(row.get('REGISTROS', 0) or 0),
-                    ctr=float(row.get('CTR', 0) or 0),
-                    vtr=float(row.get('VTR', 0) or 0),
+                    gasto=_sf(row.get('GASTO')),
+                    alcance=_sf(row.get('ALCANCE')),
+                    frecuencia=_sf(row.get('FRECUENCIA')),
+                    clics=_sf(row.get('CLICS')),
+                    views=_sf(row.get('VIEWS')),
+                    impresiones=_sf(row.get('IMPRESIONES')),
+                    registros=int(_sf(row.get('REGISTROS'))),
+                    ctr=_sf(row.get('CTR')),
+                    vtr=_sf(row.get('VTR')),
                     dia=str(row.get('DIA', '') or ''),
                 )
                 db.session.add(report_row)

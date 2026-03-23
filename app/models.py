@@ -1,5 +1,15 @@
+import math
 from datetime import datetime
 from app import db
+
+
+def _f(v):
+    """Return 0.0 if v is NaN, Inf, or non-numeric."""
+    try:
+        f = float(v) if v is not None else 0.0
+        return 0.0 if math.isnan(f) or math.isinf(f) else f
+    except (TypeError, ValueError):
+        return 0.0
 
 
 class Campaign(db.Model):
@@ -74,15 +84,15 @@ class ReportRow(db.Model):
             'AUDIENCIA': self.audiencia or '',
             'ESTABLECIMIENTO': self.establecimiento or '',
             'CIUDAD': self.ciudad or '',
-            'GASTO': self.gasto or 0,
-            'ALCANCE': self.alcance or 0,
-            'FRECUENCIA': self.frecuencia or 0,
-            'CLICS': self.clics or 0,
-            'VIEWS': self.views or 0,
-            'IMPRESIONES': self.impresiones or 0,
+            'GASTO': _f(self.gasto),
+            'ALCANCE': _f(self.alcance),
+            'FRECUENCIA': _f(self.frecuencia),
+            'CLICS': _f(self.clics),
+            'VIEWS': _f(self.views),
+            'IMPRESIONES': _f(self.impresiones),
             'REGISTROS': self.registros or 0,
-            'CTR': self.ctr or 0,
-            'VTR': self.vtr or 0,
+            'CTR': _f(self.ctr),
+            'VTR': _f(self.vtr),
             'DIA': self.dia or '',
         }
 
