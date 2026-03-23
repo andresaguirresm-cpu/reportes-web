@@ -41,8 +41,11 @@ def create_app(config_name=None):
 
     with app.app_context():
         from app import models  # noqa: F401
-        db.create_all()
-        logger.info("DB init OK — %s", app.config.get('SQLALCHEMY_DATABASE_URI', '')[:60])
+        try:
+            db.create_all()
+            logger.info("DB init OK — %s", app.config.get('SQLALCHEMY_DATABASE_URI', '')[:60])
+        except Exception as e:
+            logger.error("db.create_all() failed (non-fatal): %s", e)
         try:
             _run_migrations()
         except Exception as e:
@@ -62,7 +65,7 @@ def _ensure_reachable_db(app):
         engine = sa.create_engine(
             uri,
             pool_pre_ping=True,
-            connect_args={'connect_timeout': 5},  # fail fast if DB unreachable
+            connect_args={'connect_timeout': 3},  # fail fast — reduce startup blocking time
         )
         with engine.connect():
             pass
