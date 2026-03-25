@@ -8,6 +8,7 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,   # re-verify connections before use
         'pool_recycle': 280,     # recycle connections every ~4.5 min (Render drops idle after 5 min)
+        'connect_args': {'connect_timeout': 5},  # fail fast if DB unreachable
     }
 
     @staticmethod

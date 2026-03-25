@@ -9,7 +9,8 @@ services:
     plan: free
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn run:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --preload --worker-tmp-dir /dev/shm --config gunicorn_config.py --log-level info --capture-output
+    startCommand: gunicorn run:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --worker-tmp-dir /dev/shm --log-level info --capture-output
+    healthCheckPath: /health
     envVars:
       - key: SECRET_KEY
         generateValue: true
