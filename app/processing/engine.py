@@ -133,14 +133,18 @@ def process_file_from_memory(file_source, filename):
                 skiprows = i
                 break
 
-        # Detect European number format
+        # Detect number format: European (1.234,56) or US-with-thousands (1,234.56)
         sample_lines = '\n'.join(raw_lines[skiprows+1:skiprows+5])
-        uses_european_format = bool(re.search(r'"[\d.]+,\d{2}"', sample_lines))
+        uses_european_format = bool(re.search(r'"[\d.]*\d,\d{2}"', sample_lines))
+        uses_us_thousands = (not uses_european_format and
+                             bool(re.search(r'"[\d]+,\d{3}"', sample_lines)))
 
         csv_params = {'encoding': csv_encoding, 'skiprows': skiprows, 'on_bad_lines': 'skip'}
         if uses_european_format:
             csv_params['decimal'] = ','
             csv_params['thousands'] = '.'
+        elif uses_us_thousands:
+            csv_params['thousands'] = ','
 
         try:
             df = pd.read_csv(io.BytesIO(file_bytes), **csv_params)
@@ -298,8 +302,14 @@ def scan_campaigns_from_files(file_paths):
                     if sum(1 for kw in kws if kw in normalize(line)) >= 2:
                         skiprows = i
                         break
-                df = pd.read_csv(io.BytesIO(file_bytes), skiprows=skiprows,
-                                 on_bad_lines='skip', encoding=encoding)
+                sample_lines = '\n'.join(raw_lines[skiprows+1:skiprows+5])
+                scan_csv_params = {'skiprows': skiprows, 'on_bad_lines': 'skip', 'encoding': encoding}
+                if re.search(r'"[\d.]*\d,\d{2}"', sample_lines):
+                    scan_csv_params['decimal'] = ','
+                    scan_csv_params['thousands'] = '.'
+                elif re.search(r'"[\d]+,\d{3}"', sample_lines):
+                    scan_csv_params['thousands'] = ','
+                df = pd.read_csv(io.BytesIO(file_bytes), **scan_csv_params)
             else:
                 df_raw = pd.read_excel(io.BytesIO(file_bytes), header=None, nrows=10)
                 skiprows = detect_header_row(df_raw)
